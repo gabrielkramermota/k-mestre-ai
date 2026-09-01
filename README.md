@@ -219,8 +219,14 @@ Open source. Consulte o arquivo [LICENSE](./LICENSE) para os termos de uso.
 
 Se você gostou do **K-Mestre AI**, considere adicionar o projeto aos favoritos com uma **⭐ Star**! Isso ajuda muito na divulgação e motiva o desenvolvimento de novas funcionalidades.
 
+## Star History
+
 <a href="https://www.star-history.com/?repos=gabrielkramermota%2Fk-mestre-ai&type=date&legend=top-left">
-  <img align="center" src="https://api.star-history.com/svg?repos=gabrielkramermota/k-mestre-ai&type=Date" alt="Histórico de estrelas do K-Mestre AI" width="600" />
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=gabrielkramermota/k-mestre-ai&type=date&theme=dark&legend=top-left&sealed_token=X4dAMPLd2ZbT94_VZMFdOVFaz54m75N1dflHHWnIkXWnrwA6kvS_9sAZZ88wKJOcSNMTZ7HwdOGyymIPth3wttIvccasA6h7q89EsFw9Mh7lS6ERKDFOk-Ny5RYGunUqahkk1SdLmZsnVSAC4OWave6ZHbXhuRDCpwbH6A9i-x-7ZhOXrb5ufYxSQbjA" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=gabrielkramermota/k-mestre-ai&type=date&legend=top-left&sealed_token=X4dAMPLd2ZbT94_VZMFdOVFaz54m75N1dflHHWnIkXWnrwA6kvS_9sAZZ88wKJOcSNMTZ7HwdOGyymIPth3wttIvccasA6h7q89EsFw9Mh7lS6ERKDFOk-Ny5RYGunUqahkk1SdLmZsnVSAC4OWave6ZHbXhuRDCpwbH6A9i-x-7ZhOXrb5ufYxSQbjA" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=gabrielkramermota/k-mestre-ai&type=date&legend=top-left&sealed_token=X4dAMPLd2ZbT94_VZMFdOVFaz54m75N1dflHHWnIkXWnrwA6kvS_9sAZZ88wKJOcSNMTZ7HwdOGyymIPth3wttIvccasA6h7q89EsFw9Mh7lS6ERKDFOk-Ny5RYGunUqahkk1SdLmZsnVSAC4OWave6ZHbXhuRDCpwbH6A9i-x-7ZhOXrb5ufYxSQbjA" />
+ </picture>
 </a>
 
 > O histórico de estrelas é atualizado automaticamente pelo [star-history.com](https://star-history.com).
