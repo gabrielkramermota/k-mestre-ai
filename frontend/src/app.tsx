@@ -181,7 +181,7 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
     setLoaded(true);
   }, []);
 
-  // Piscar em azul a aresta entre dois terminais quando ha comunicacao real (maestri send)
+  // Piscar em azul a aresta entre dois terminais quando ha comunicacao real (kmestre send)
   useEffect(() => {
     const setEdgeActive = (a: string, b: string, active: boolean) => {
       setEdges(eds => eds.map(edge => {

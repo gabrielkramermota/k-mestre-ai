@@ -21,19 +21,19 @@ export const liveTerminals = new Map<string, LiveTerminal>();
 
 const MAX_BUFFER_BYTES = 200_000;
 
-const AGENT_BOOTSTRAP = `# Maestri — agente em canvas compartilhado
+const AGENT_BOOTSTRAP = `# K-Mestre — agente em canvas compartilhado
 
-Você está rodando dentro do Maestri, um canvas que conecta agentes/terminais.
+Você está rodando dentro do K-Mestre, um canvas que conecta agentes/terminais.
 
-- Rode \`maestri list\` ANTES de falar sobre outros agentes ou terminais.
-  A resposta vem do orquestrador (CLI maestri), NÃO da sua própria lista de
+- Rode \`kmestre list\` ANTES de falar sobre outros agentes ou terminais.
+  A resposta vem do orquestrador (CLI kmestre), NÃO da sua própria lista de
   subagentes/peers internos.
-- Para mandar mensagem a um colega: \`maestri send <nome-ou-id> "<mensagem>"\`.
-- Para ler a saída recente de um colega (resposta): \`maestri check <nome-ou-id>\`.
-  Envie a mensagem, aguarde alguns segundos e use \`maestri check\` para ver a resposta.
-- Notas conectadas: \`maestri list\` mostra as notas do canvas. Leia com
-  \`maestri note read <nome.md>\`, edite com \`maestri note write <nome.md> "<conteudo>"\`
-  e crie com \`maestri note create "<conteudo>" [--name "Nome"]\`.
+- Para mandar mensagem a um colega: \`kmestre send <nome-ou-id> "<mensagem>"\`.
+- Para ler a saída recente de um colega (resposta): \`kmestre check <nome-ou-id>\`.
+  Envie a mensagem, aguarde alguns segundos e use \`kmestre check\` para ver a resposta.
+- Notas conectadas: \`kmestre list\` mostra as notas do canvas. Leia com
+  \`kmestre note read <nome.md>\`, edite com \`kmestre note write <nome.md> "<conteudo>"\`
+  e crie com \`kmestre note create "<conteudo>" [--name "Nome"]\`.
 `;
 
 function writeAgentBootstrap(cwd: string): void {
@@ -80,9 +80,9 @@ export function spawnTerminal(params: SpawnParams): LiveTerminal {
     cwd: params.cwd,
     env: {
       ...(process.env as Record<string, string>),
-      MAESTRI_TERMINAL_ID: params.terminalId,
-      MAESTRI_TOKEN: token,
-      MAESTRI_API: 'http://localhost:3001',
+      KMESTRE_TERMINAL_ID: params.terminalId,
+      KMESTRE_TOKEN: token,
+      KMESTRE_API: 'http://localhost:3001',
       PATH: `${params.cliShimDir}${path.delimiter}${process.env.PATH}`,
     },
   });

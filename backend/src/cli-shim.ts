@@ -6,8 +6,8 @@ export function ensureCliShim(backendRoot: string): string {
   if (!fs.existsSync(shimDir)) fs.mkdirSync(shimDir, { recursive: true });
 
   const tsNodeBin = path.join(backendRoot, 'node_modules', 'ts-node', 'dist', 'bin.js');
-  const cliSrc = path.join(backendRoot, 'src', 'cli', 'maestri.ts');
-  const shimPath = path.join(shimDir, 'maestri.cmd');
+  const cliSrc = path.join(backendRoot, 'src', 'cli', 'kmestre.ts');
+  const shimPath = path.join(shimDir, 'kmestre.cmd');
 
   const content = `@echo off\r\nnode "${tsNodeBin}" --files "${cliSrc}" %*\r\n`;
   fs.writeFileSync(shimPath, content, 'utf-8');

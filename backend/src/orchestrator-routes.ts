@@ -45,7 +45,7 @@ function connectedIdsOf(edges: CanvasEdge[], terminalId: string): Set<string> {
 }
 
 function requireTerminalToken(req: Request, res: Response, next: NextFunction): void {
-  const token = req.header('X-Maestri-Token');
+  const token = req.header('X-Kmestre-Token');
   const entry = token ? [...liveTerminals.values()].find(t => t.token === token) : undefined;
   if (!entry) {
     res.status(401).json({ error: 'Token de terminal invalido ou ausente.' });

@@ -81,10 +81,10 @@ backend/
 │   ├── db.ts                  # Prisma Client (SQLite ou Postgres) + migrate
 │   ├── auth.ts                # hash de senha, sessões, cookies
 │   ├── terminal-registry.ts   # spawn/gestão de PTYs (node-pty)
-│   ├── orchestrator-routes.ts # API interna dos terminais (maestri)
+│   ├── orchestrator-routes.ts # API interna dos terminais (kmestre)
 │   ├── roles.ts               # gera role.json + AGENTS.md/CLAUDE.md por papel
-│   ├── cli-shim.ts            # cria o shim `maestri.cmd` no PATH dos terminais
-│   └── cli/maestri.ts         # CLI `maestri` (list/send/check/note)
+│   ├── cli-shim.ts            # cria o shim `kmestre.cmd` no PATH dos terminais
+│   └── cli/kmestre.ts         # CLI `kmestre` (list/send/check/note)
 ├── prisma/
 │   ├── schema.prisma          # schema SQLite
 │   ├── schema.postgres.prisma # schema PostgreSQL
@@ -99,4 +99,4 @@ backend/
 - HTTP: `http://localhost:8080`
 - WebSocket dos terminais: `ws://localhost:8080/ws/terminal?terminalId=...&workspace=...&shell=powershell`
 
-O orquestrador expõe `/api/orchestrator/*` para a CLI `maestri` dentro dos terminais (autenticada por token de terminal).
+O orquestrador expõe `/api/orchestrator/*` para a CLI `kmestre` dentro dos terminais (autenticada por token de terminal).

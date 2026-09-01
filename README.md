@@ -2,7 +2,7 @@
 
 <p align="center"><img src="frontend/public/logo.png" width="220" alt="K-Mestre AI" /></p>
 
-> Um **orquestrador de IA** visual: uma "mesa de trabalho" que conecta agentes de IA, terminais e notas em um canvas compartilhado. Projeto open source, inspirado no [Maestri AI](https://www.themaestri.app/).
+> Um **orquestrador de IA** visual: uma "mesa de trabalho" que conecta agentes de IA, terminais e notas em um canvas compartilhado. Projeto open source.
 
 ![Demonstração](frontend/public/demonstracao.jpeg)
 
@@ -30,7 +30,7 @@ O K-Mestre AI é um canvas onde você monta a sua equipe de agentes:
 | **Terminais** | PTY reais rodando no seu PC, cada um em um diretório de trabalho. Cada terminal vira um "agente" com um papel (role) e um prompt. |
 | **Notas** | Documentos Markdown compartilhados entre os agentes conectados. |
 | **Árvore de arquivos** | Navegação rápida pelos arquivos do workspace. |
-| **Conexões** | Ligue terminais com arestas para que eles conversem entre si (via CLI `maestri`). |
+| **Conexões** | Ligue terminais com arestas para que eles conversem entre si (via CLI `kmestre`). |
 
 Tudo roda **100% local** no seu computador. O backend sobe os PTYs, o frontend é a interface, e o orquestrador faz a ponte entre eles.
 
@@ -63,7 +63,7 @@ O **Maestro** é o coração da orquestração: ele **recebe a demanda do objeti
 | | Sem orquestração | Com o K-Mestre AI |
 |--|------------------|--------------------|
 | **Demandas** | Você abre vários chats e copia/cola manualmente cada tarefa | Uma só mensagem ao Maestro, que distribui para os especialistas |
-| **Comunicação** | Não há — cada agente trabalha isolado | Agentes se conectam e trocam mensagens pela CLI `maestri` |
+| **Comunicação** | Não há — cada agente trabalha isolado | Agentes se conectam e trocam mensagens pela CLI `kmestre` |
 | **Contexto** | Cada agente começa do zero | Notas e arquivos compartilhados mantêm o contexto entre todos |
 | **Entrega** | Você junta as partes na mão | Cada especialista entrega pronto, e você visualiza tudo no canvas |
 
@@ -80,14 +80,14 @@ Você acompanha o progresso **em tempo real** no canvas: cada terminal mostra su
 - **Multiusuário** com login por senha (sessão via cookie)
 - **Multi-workspace** com layouts salvos por workspace
 - **Sistema de papéis (roles)** — crie um papel com prompt, cor e diretório de trabalho
-- **CLI `maestri`** embutida nos terminais para os agentes se comunicarem:
+- **CLI `kmestre`** embutida nos terminais para os agentes se comunicarem:
 
 | Comando | O que faz |
 |---------|-----------|
-| `maestri list` | Lista colegas conectados e notas compartilhadas |
-| `maestri send <alvo> "<mensagem>"` | Envia uma demanda a um colega |
-| `maestri check <alvo>` | Lê a saída recente de um colega |
-| `maestri note read\|write\|create` | Lê, edita e cria notas compartilhadas |
+| `kmestre list` | Lista colegas conectados e notas compartilhadas |
+| `kmestre send <alvo> "<mensagem>"` | Envia uma demanda a um colega |
+| `kmestre check <alvo>` | Lê a saída recente de um colega |
+| `kmestre note read\|write\|create` | Lê, edita e cria notas compartilhadas |
 
 - **Notas** com editor Markdown + preview (GFM)
 - **Banco de dados** via SQLite (padrão, zero configuração) ou PostgreSQL (opcional, via Docker)
@@ -215,4 +215,4 @@ Se você gostou do **K-Mestre AI**, considere adicionar o projeto aos favoritos 
 
 ---
 
-<p align="center">Feito com 💙 e muito terminal · Inspirado no <a href="https://www.themaestri.app/">Maestri AI</a> · <a href="https://www.linkedin.com/in/gabriel-kramer-desenvolvedor/">Gabriel Kramer Mota</a></p>
+<p align="center">Feito com 💙 e muito terminal · <a href="https://www.linkedin.com/in/gabriel-kramer-desenvolvedor/">Gabriel Kramer Mota</a></p>

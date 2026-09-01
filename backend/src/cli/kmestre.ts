@@ -1,8 +1,8 @@
 /// <reference types="node" />
 
-const terminalId = process.env.MAESTRI_TERMINAL_ID;
-const token = process.env.MAESTRI_TOKEN;
-const api = process.env.MAESTRI_API || 'http://localhost:3001';
+const terminalId = process.env.KMESTRE_TERMINAL_ID;
+const token = process.env.KMESTRE_TOKEN;
+const api = process.env.KMESTRE_API || 'http://localhost:3001';
 
 interface ListResponse {
   teammates: Array<{ id: string; name: string; roleName: string | null }>;
@@ -13,18 +13,18 @@ async function main(): Promise<void> {
   const [, , cmd, ...args] = process.argv;
 
   if (!terminalId || !token) {
-    console.error('maestri: este terminal nao esta registrado no orquestrador (variaveis de ambiente ausentes).');
+    console.error('kmestre: este terminal nao esta registrado no orquestrador (variaveis de ambiente ausentes).');
     process.exitCode = 1;
     return;
   }
 
   if (cmd === 'list') {
     const res = await fetch(`${api}/api/orchestrator/list`, {
-      headers: { 'X-Maestri-Token': token },
+      headers: { 'X-Kmestre-Token': token },
     });
     const data = (await res.json()) as ListResponse & { error?: string };
     if (!res.ok) {
-      console.error(`maestri: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
+      console.error(`kmestre: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
       process.exitCode = 1;
       return;
     }
@@ -46,41 +46,41 @@ async function main(): Promise<void> {
     const [target, ...msgParts] = args;
     const message = msgParts.join(' ');
     if (!target || !message) {
-      console.error('Uso: maestri send <alvo> <mensagem>');
+      console.error('Uso: kmestre send <alvo> <mensagem>');
       process.exitCode = 1;
       return;
     }
 
     const res = await fetch(`${api}/api/orchestrator/send`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Maestri-Token': token },
+      headers: { 'Content-Type': 'application/json', 'X-Kmestre-Token': token },
       body: JSON.stringify({ target, message }),
     });
     const data = (await res.json()) as { ok?: boolean; error?: string };
     if (!res.ok) {
-      console.error(`maestri: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
+      console.error(`kmestre: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
       process.exitCode = 1;
       return;
     }
 
-    console.log(`maestri: mensagem enviada para ${target}.`);
+    console.log(`kmestre: mensagem enviada para ${target}.`);
     return;
   }
 
   if (cmd === 'check') {
     const [target] = args;
     if (!target) {
-      console.error('Uso: maestri check <alvo>');
+      console.error('Uso: kmestre check <alvo>');
       process.exitCode = 1;
       return;
     }
 
     const res = await fetch(`${api}/api/orchestrator/output?target=${encodeURIComponent(target)}`, {
-      headers: { 'X-Maestri-Token': token },
+      headers: { 'X-Kmestre-Token': token },
     });
     const data = (await res.json()) as { output?: string; error?: string };
     if (!res.ok) {
-      console.error(`maestri: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
+      console.error(`kmestre: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
       process.exitCode = 1;
       return;
     }
@@ -95,16 +95,16 @@ async function main(): Promise<void> {
     if (sub === 'read') {
       const [name] = rest;
       if (!name) {
-        console.error('Uso: maestri note read <nome.md>');
+        console.error('Uso: kmestre note read <nome.md>');
         process.exitCode = 1;
         return;
       }
       const res = await fetch(`${api}/api/orchestrator/note?name=${encodeURIComponent(name)}`, {
-        headers: { 'X-Maestri-Token': token },
+        headers: { 'X-Kmestre-Token': token },
       });
       const data = (await res.json()) as { content?: string; error?: string };
       if (!res.ok) {
-        console.error(`maestri: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
+        console.error(`kmestre: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
         process.exitCode = 1;
         return;
       }
@@ -116,22 +116,22 @@ async function main(): Promise<void> {
       const [name, ...contentParts] = rest;
       const content = contentParts.join(' ');
       if (!name) {
-        console.error('Uso: maestri note write <nome.md> "<conteudo>"');
+        console.error('Uso: kmestre note write <nome.md> "<conteudo>"');
         process.exitCode = 1;
         return;
       }
       const res = await fetch(`${api}/api/orchestrator/note`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Maestri-Token': token },
+        headers: { 'Content-Type': 'application/json', 'X-Kmestre-Token': token },
         body: JSON.stringify({ name, content }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok) {
-        console.error(`maestri: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
+        console.error(`kmestre: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
         process.exitCode = 1;
         return;
       }
-      console.log(`maestri: nota ${name} atualizada.`);
+      console.log(`kmestre: nota ${name} atualizada.`);
       return;
     }
 
@@ -148,29 +148,29 @@ async function main(): Promise<void> {
       const content = contentParts.join(' ');
       const res = await fetch(`${api}/api/orchestrator/note/create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Maestri-Token': token },
+        headers: { 'Content-Type': 'application/json', 'X-Kmestre-Token': token },
         body: JSON.stringify({ name, content }),
       });
       const data = (await res.json()) as { ok?: boolean; filename?: string; error?: string };
       if (!res.ok) {
-        console.error(`maestri: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
+        console.error(`kmestre: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
         process.exitCode = 1;
         return;
       }
-      console.log(`maestri: nota criada: ${data.filename}`);
+      console.log(`kmestre: nota criada: ${data.filename}`);
       return;
     }
 
-    console.error('Uso: maestri note read <nome.md> | maestri note write <nome.md> "<conteudo>" | maestri note create "<conteudo>" [--name "Nome"]');
+    console.error('Uso: kmestre note read <nome.md> | kmestre note write <nome.md> "<conteudo>" | kmestre note create "<conteudo>" [--name "Nome"]');
     process.exitCode = 1;
     return;
   }
 
-  console.error('Uso: maestri list | maestri send <alvo> <mensagem> | maestri check <alvo> | maestri note read|write|create ...');
+  console.error('Uso: kmestre list | kmestre send <alvo> <mensagem> | kmestre check <alvo> | kmestre note read|write|create ...');
   process.exitCode = 1;
 }
 
 main().catch(err => {
-  console.error('maestri: erro inesperado -', err instanceof Error ? err.message : err);
+  console.error('kmestre: erro inesperado -', err instanceof Error ? err.message : err);
   process.exitCode = 1;
 });

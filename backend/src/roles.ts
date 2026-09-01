@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export function roleDir(workingDirectory: string, roleId: string): string {
-  return path.join(workingDirectory, '.maestri', 'roles', roleId);
+  return path.join(workingDirectory, '.kmestre', 'roles', roleId);
 }
 
 export interface RoleFiles {
@@ -37,8 +37,8 @@ export function writeRoleFiles(params: RoleFiles): void {
     '<your_assigned_role>',
     params.rolePrompt,
     '',
-    'Rode `maestri list` para ver seus colegas conectados e notas compartilhadas.',
-    'Rode `maestri send <nome-ou-id> "<mensagem>"` para mandar uma demanda a um colega.',
+    'Rode `kmestre list` para ver seus colegas conectados e notas compartilhadas.',
+    'Rode `kmestre send <nome-ou-id> "<mensagem>"` para mandar uma demanda a um colega.',
     '</your_assigned_role>',
     '',
     '<working_directory>',

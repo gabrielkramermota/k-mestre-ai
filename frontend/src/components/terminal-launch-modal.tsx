@@ -22,7 +22,7 @@ const QUICK_START = [
   { label: 'Shell', command: '', icon: TerminalSquare },
 ] as const;
 
-const STORAGE_KEY = 'maestri:lastTerminalChoice';
+const STORAGE_KEY = 'kmestre:lastTerminalChoice';
 
 function loadDefaultShell(): 'powershell' | 'cmd' {
   try {
