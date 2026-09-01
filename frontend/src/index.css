@@ -180,17 +180,53 @@ body {
   overflow: hidden;
 }
 
+.workspace-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px var(--sidebar-pad) 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.workspace-brand-logo {
+  display: none;
+}
+
+.workspace-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.workspace-brand-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.workspace-brand .workspace-sidebar-collapse {
+  color: #64748b;
+}
+
+.workspace-brand .workspace-sidebar-collapse:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
 .workspace-sidebar-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 16px var(--sidebar-pad) 12px;
+  padding: 14px var(--sidebar-pad) 8px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #64748b;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   flex-shrink: 0;
 }
 
@@ -300,8 +336,8 @@ body {
 }
 
 .workspace-new-btn {
-  margin: 8px var(--sidebar-pad) 12px;
-  padding: 9px 10px;
+  margin: 8px var(--sidebar-pad) 10px;
+  padding: 10px 10px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px dashed rgba(255, 255, 255, 0.15);
   border-radius: 8px;
@@ -328,17 +364,31 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 12px var(--sidebar-pad);
+  padding: 14px var(--sidebar-pad) 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
 
+.workspace-footer-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.workspace-footer-avatar {
+  display: none;
+}
+
 .workspace-footer-username {
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #cbd5e1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .workspace-footer-logout {

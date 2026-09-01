@@ -75,12 +75,17 @@ function WorkspaceSidebar({ workspaces, current, onSwitch, onNew, onDelete, user
 
   return (
     <div className="workspace-sidebar">
-      <div className="workspace-sidebar-header">
-        <FolderOpen size={14} />
-        <span>Áreas de trabalho</span>
+      <div className="workspace-brand">
+        <div className="workspace-brand-text">
+          <span className="workspace-brand-name">K-Mestre</span>
+        </div>
         <button className="workspace-sidebar-collapse" onClick={onCollapse} title="Recolher">
           <PanelLeftClose size={14} />
         </button>
+      </div>
+      <div className="workspace-sidebar-header">
+        <FolderOpen size={14} />
+        <span>Áreas de trabalho</span>
       </div>
       <div className="workspace-sidebar-search">
         <input
@@ -124,7 +129,9 @@ function WorkspaceSidebar({ workspaces, current, onSwitch, onNew, onDelete, user
         <Plus size={13} /> Nova Área de Trabalho
       </button>
       <div className="workspace-footer">
-        <span className="workspace-footer-username" title={username}>{username}</span>
+        <div className="workspace-footer-user">
+          <span className="workspace-footer-username" title={username}>{username}</span>
+        </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <button className="workspace-footer-logout" onClick={onSettings} title="Configurações">
             <Settings size={14} />
