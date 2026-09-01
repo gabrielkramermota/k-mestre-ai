@@ -31,11 +31,11 @@ export default function NewWorkspaceModal({
 
   const handleConfirm = () => {
     if (!name.trim()) {
-      toast.error('Dê um nome para a área de trabalho.');
+      toast.error('Dê um nome para a nova área de trabalho.');
       return;
     }
     if (!dir.trim()) {
-      toast.error('Escolha um diretório padrão.');
+      toast.error('Escolha um diretório padrão para começar.');
       return;
     }
     onConfirm({ name: name.trim(), defaultWorkingDirectory: dir.trim() });

@@ -96,13 +96,13 @@ function getDirectoryTree(dirPath: string): any {
 
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body as { username?: string; password?: string };
-  if (!username || !password) return res.status(400).json({ error: 'username and password required' });
+  if (!username || !password) return res.status(400).json({ error: 'Informe usuário e senha.' });
 
   const user = await prisma.user.findUnique({ where: { username } });
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  if (!user) return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
 
   const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+  if (!valid) return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
 
   const userId = user.id;
   const { token, expiresAt } = await createSession(userId);

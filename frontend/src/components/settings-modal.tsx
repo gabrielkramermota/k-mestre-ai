@@ -22,16 +22,16 @@ export default function SettingsModal({
 
   const handleSave = async () => {
     if (!currentPassword.trim()) {
-      toast.error('Informe a senha atual.');
+      toast.error('Confirme a senha atual para continuar.');
       return;
     }
     setSaving(true);
     try {
       const res = await changeAccount(currentPassword.trim(), newUsername.trim(), newPassword);
-      toast.success('Conta atualizada.');
+      toast.success('Dados da conta atualizados com sucesso.');
       onSaved(res.username);
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error(err instanceof Error ? err.message : 'Não foi possível atualizar a conta. Tente novamente.');
     } finally {
       setSaving(false);
     }

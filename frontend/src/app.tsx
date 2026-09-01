@@ -304,7 +304,7 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
     const updated = await getWorkspaces();
     setWorkspaces(updated);
     await handleSwitchWorkspace(safe);
-    toast.success(`Área de trabalho "${choice.name}" criada.`);
+    toast.success(`Área de trabalho "${choice.name}" criada com sucesso.`);
   };
 
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -344,7 +344,7 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
       try {
         roleId = await createTerminalRole(terminalId, choice.workingDirectory, choice.roleName, choice.rolePrompt, '#8b5cf6');
       } catch (err) {
-        toast.error('Falha ao gravar os arquivos do papel: ' + (err as Error).message);
+        toast.error('Não foi possível criar o papel: ' + (err as Error).message);
         return;
       }
     }

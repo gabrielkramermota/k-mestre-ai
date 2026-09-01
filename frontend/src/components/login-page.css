@@ -184,18 +184,6 @@
 
 .login-eye:hover { color: #e2e8f0; background: rgba(255, 255, 255, 0.06); }
 
-.login-error {
-  color: #f87171;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 8px;
-  padding: 8px 12px;
-}
-
 .login-submit {
   width: 100%;
   justify-content: center;

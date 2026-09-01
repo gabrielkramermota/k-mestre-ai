@@ -69,7 +69,7 @@ export default function TerminalLaunchModal({
 
   const handleConfirm = () => {
     if (!workingDirectory.trim()) {
-      toast.error('Escolha um diretório de trabalho.');
+      toast.error('Escolha um diretório de trabalho para o terminal.');
       return;
     }
     try {

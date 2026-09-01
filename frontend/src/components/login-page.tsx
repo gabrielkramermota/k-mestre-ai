@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Eye, EyeOff, LogIn, Users, Link2, StickyNote } from 'lucide-react';
+import { Eye, EyeOff, Users, Link2, StickyNote } from 'lucide-react';
+import { toast } from 'sonner';
 import { login } from '../api';
 import './login-page.css';
 
@@ -12,18 +13,17 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       await login(username, password);
+      toast.success(`Que bom te ver de novo, ${username}! Sua mesa está pronta.`);
       onSuccess();
-    } catch (err: any) {
-      setError(err.message || 'Falha ao entrar');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Não foi possível entrar. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -105,13 +105,6 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
               </button>
             </div>
           </div>
-
-          {error && (
-            <div className="login-error">
-              <LogIn size={15} />
-              <span>{error}</span>
-            </div>
-          )}
 
           <button
             type="submit"
