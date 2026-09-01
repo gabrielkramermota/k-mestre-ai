@@ -396,7 +396,6 @@ migrate()
 
       if (entry) {
         attachWs(terminalId, ws);
-        console.log('Terminal reconectado (pty ja estava vivo)', terminalId);
       } else {
         const shell = (url.searchParams.get('shell') === 'cmd' ? 'cmd' : 'powershell') as 'cmd' | 'powershell';
         const cmd = url.searchParams.get('cmd') || undefined;
@@ -421,7 +420,6 @@ migrate()
           cliShimDir,
         });
         attachWs(terminalId, ws);
-        console.log('Terminal criado', terminalId);
       }
 
       ws.on('message', (msg) => {
@@ -439,7 +437,6 @@ migrate()
       });
       ws.on('close', () => {
         detachWs(terminalId, ws);
-        console.log('Terminal desconectado (pty segue vivo)', terminalId);
       });
       ws.on('error', () => {
         detachWs(terminalId, ws);
