@@ -2,9 +2,21 @@
 
 <p align="center"><img src="frontend/public/logo.png" width="220" alt="K-Mestre AI" /></p>
 
+<p align="center">
+  <img src="https://img.shields.io/github/stars/gabrielkramermota/k-mestre-ai?style=for-the-badge&color=8b5cf6" alt="Stars" />
+  <img src="https://img.shields.io/github/forks/gabrielkramermota/k-mestre-ai?style=for-the-badge&color=8b5cf6" alt="Forks" />
+  <img src="https://img.shields.io/github/license/gabrielkramermota/k-mestre-ai?style=for-the-badge&color=8b5cf6" alt="Licença" />
+  <img src="https://img.shields.io/github/issues/gabrielkramermota/k-mestre-ai?style=for-the-badge&color=8b5cf6" alt="Issues" />
+</p>
+
 > Um **orquestrador de IA** visual: uma "mesa de trabalho" que conecta agentes de IA, terminais e notas em um canvas compartilhado. Projeto open source.
 
-![Demonstração](frontend/public/demonstracao.jpeg)
+![Área de trabalho](frontend/public/area-de-trabalho.png)
+
+<p align="center">
+  <img src="frontend/public/login.png" width="49%" alt="Tela de login" />
+  <img src="frontend/public/criar-terminal.png" width="49%" alt="Criação de terminal" />
+</p>
 
 > 🚧 **Em desenvolvimento** — este projeto está em constante evolução, então novas atualizações e funcionalidades virão por aqui. Fique de olho! ⭐
 
@@ -207,7 +219,7 @@ Open source. Consulte o arquivo [LICENSE](./LICENSE) para os termos de uso.
 
 Se você gostou do **K-Mestre AI**, considere adicionar o projeto aos favoritos com uma **⭐ Star**! Isso ajuda muito na divulgação e motiva o desenvolvimento de novas funcionalidades.
 
-<a href="https://github.com/gabrielkramermota/k-mestre-ai">
+<a href="https://www.star-history.com/?repos=gabrielkramermota%2Fk-mestre-ai&type=date&legend=top-left">
   <img align="center" src="https://api.star-history.com/svg?repos=gabrielkramermota/k-mestre-ai&type=Date" alt="Histórico de estrelas do K-Mestre AI" width="600" />
 </a>
 
