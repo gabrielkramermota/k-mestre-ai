@@ -17,7 +17,7 @@
 .loading-logo img {
   width: clamp(160px, 18vw, 220px);
   height: auto;
-  filter: drop-shadow(0 0 24px rgba(59, 130, 246, 0.35));
+  filter: drop-shadow(0 0 24px rgba(139, 92, 246, 0.35));
   animation: logo-fade 1.2s ease forwards;
 }
 
@@ -33,7 +33,7 @@
   height: 100%;
   width: 40%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  background: linear-gradient(90deg, #8b5cf6, #6366f1);
   animation: bar-slide 1.4s ease-in-out infinite;
 }
 

@@ -11,7 +11,7 @@
     0 20px 45px -16px rgba(0, 0, 0, 0.5),
     0 2px 8px 0 rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  --accent-color: #3b82f6;
+  --accent-color: #8b5cf6;
   --sidebar-width: 260px;
   --sidebar-pad: 12px;
 }
@@ -30,7 +30,7 @@ body {
 .react-flow {
   background-color: var(--bg-color);
   background-image:
-    radial-gradient(1000px 500px at 85% -10%, rgba(59, 130, 246, 0.08), transparent 60%),
+    radial-gradient(1000px 500px at 85% -10%, rgba(139, 92, 246, 0.08), transparent 60%),
     radial-gradient(800px 400px at 10% 110%, rgba(139, 92, 246, 0.06), transparent 60%);
 }
 .react-flow__pane {
@@ -104,8 +104,8 @@ body {
   flex-shrink: 0;
 }
 
-.node-toolbar button:hover { background: rgba(59, 130, 246, 0.18); }
-.node-toolbar button.active { background: rgba(59, 130, 246, 0.22); color: #3b82f6; }
+.node-toolbar button:hover { background: rgba(139, 92, 246, 0.18); }
+.node-toolbar button.active { background: rgba(139, 92, 246, 0.22); color: #8b5cf6; }
 .node-toolbar button.danger:hover { background: rgba(239, 68, 68, 0.18); color: #ef4444; }
 
 .node-toolbar-divider {
@@ -124,16 +124,16 @@ body {
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  color: #3b82f6;
+  color: #8b5cf6;
   cursor: crosshair;
   flex-shrink: 0;
 }
 
-.node-toolbar-connect:hover { background: rgba(59, 130, 246, 0.18); }
+.node-toolbar-connect:hover { background: rgba(139, 92, 246, 0.18); }
 
 .node-toolbar-connect:has(.react-flow__handle.connectingfrom) {
-  background: rgba(59, 130, 246, 0.35);
-  box-shadow: 0 0 0 2px #3b82f6;
+  background: rgba(139, 92, 246, 0.35);
+  box-shadow: 0 0 0 2px #8b5cf6;
 }
 
 /* ── Toolbar ────────────────────────────────────────────────────────────────── */
@@ -163,7 +163,7 @@ body {
 
 .ui-btn:hover {
   background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(59, 130, 246, 0.4);
+  border-color: rgba(139, 92, 246, 0.4);
   color: var(--text-color);
 }
 
@@ -230,7 +230,7 @@ body {
   transition: color 0.15s;
 }
 
-.workspace-sidebar-toggle:hover { color: #93c5fd; }
+.workspace-sidebar-toggle:hover { color: #c4b5fd; }
 
 .workspace-sidebar-search {
   padding: 10px var(--sidebar-pad) 2px;
@@ -255,7 +255,7 @@ body {
 
 .workspace-search-input:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.55);
+  border-color: rgba(139, 92, 246, 0.55);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -287,8 +287,8 @@ body {
 }
 
 .workspace-item.active {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
+  background: rgba(139, 92, 246, 0.15);
+  color: #c4b5fd;
   font-weight: 500;
 }
 
@@ -318,9 +318,9 @@ body {
 }
 
 .workspace-new-btn:hover {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.4);
-  color: #93c5fd;
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #c4b5fd;
 }
 
 .workspace-footer {
@@ -408,8 +408,8 @@ body {
 
 .mw-input:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.55);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.55);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -439,9 +439,9 @@ select.mw-input option {
 }
 
 .mw-quickstart.active {
-  background: rgba(59, 130, 246, 0.1);
-  color: #93c5fd;
-  box-shadow: 0 0 0 1.5px rgba(59, 130, 246, 0.6);
+  background: rgba(139, 92, 246, 0.1);
+  color: #c4b5fd;
+  box-shadow: 0 0 0 1.5px rgba(139, 92, 246, 0.6);
 }
 
 .mw-tabs {
@@ -494,7 +494,7 @@ select.mw-input option {
 
 .mw-secondary-btn:hover {
   background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(59, 130, 246, 0.4);
+  border-color: rgba(139, 92, 246, 0.4);
 }
 
 .mw-switch {
@@ -535,13 +535,13 @@ select.mw-input option {
 }
 
 .mw-switch input:checked + .mw-switch-slider {
-  background: rgba(59, 130, 246, 0.35);
-  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(139, 92, 246, 0.35);
+  border-color: rgba(139, 92, 246, 0.6);
 }
 
 .mw-switch input:checked + .mw-switch-slider::before {
   transform: translateX(17px);
-  background: #93c5fd;
+  background: #c4b5fd;
 }
 
 /* ── Streaming indicator ────────────────────────────────────────────────────── */

@@ -14,7 +14,7 @@ const TreeItem = ({ node, level = 0 }: { node: any; level?: number }) => {
         style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: isDir ? 'pointer' : 'default', color: '#e2e8f0' }}
       >
         {isDir
-          ? <Folder size={12} color="#3b82f6" />
+          ? <Folder size={12} color="#8b5cf6" />
           : <File size={12} color="#94a3b8" />
         }
         <span>{node.name}</span>

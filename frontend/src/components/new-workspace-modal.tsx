@@ -91,4 +91,4 @@ const headerRowStyle: CSSProperties = {
   display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px',
   borderBottom: '1px solid var(--node-border)',
 };
-const linkBtnStyle: CSSProperties = { background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: 14 };
+const linkBtnStyle: CSSProperties = { background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer', fontSize: 14 };

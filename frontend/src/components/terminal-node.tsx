@@ -26,7 +26,7 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
     terminalRef.current.innerHTML = '';
 
     const term = new Terminal({
-      theme: { background: 'rgba(10, 12, 16, 0.95)', foreground: '#e2e8f0', cursor: '#3b82f6' },
+      theme: { background: 'rgba(10, 12, 16, 0.95)', foreground: '#e2e8f0', cursor: '#8b5cf6' },
       fontFamily: 'Consolas, monospace',
       fontSize: 13,
     });
@@ -123,7 +123,7 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
         minWidth={320}
         minHeight={200}
         isVisible={!!selected}
-        color="#3b82f6"
+        color="#8b5cf6"
         handleStyle={{ zIndex: 10 }}
         lineStyle={{ zIndex: 10 }}
       />
@@ -138,28 +138,28 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
         id="src-top"
         position={Position.Top}
         title="Conectar para cima"
-        style={{ background: '#3b82f6', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
+        style={{ background: '#8b5cf6', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
       />
       <Handle
         type="source"
         id="connect"
         position={Position.Right}
         title="Conectar para a direita"
-        style={{ background: '#3b82f6', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
+        style={{ background: '#8b5cf6', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
       />
       <Handle
         type="source"
         id="src-bottom"
         position={Position.Bottom}
         title="Conectar para baixo"
-        style={{ background: '#3b82f6', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
+        style={{ background: '#8b5cf6', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
       />
       <Handle
         type="source"
         id="src-left"
         position={Position.Left}
         title="Conectar para a esquerda"
-        style={{ background: '#3b82f6', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
+        style={{ background: '#8b5cf6', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
       />
 
       {selected && (
@@ -187,7 +187,7 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
 
       <div className="glass-header custom-drag-handle" style={data.isMaestro ? { borderBottom: '1px solid #facc15' } : undefined}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, overflow: 'hidden' }}>
-          <TerminalSquare size={14} color="#3b82f6" />
+          <TerminalSquare size={14} color="#8b5cf6" />
           {Boolean(data.isMaestro) && <Crown size={13} color="#facc15" />}
           {editingLabel ? (
             <input
@@ -197,7 +197,7 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
               onBlur={commitLabel}
               onKeyDown={e => { if (e.key === 'Enter') commitLabel(); if (e.key === 'Escape') setEditingLabel(false); }}
               style={{
-                background: 'transparent', border: 'none', borderBottom: '1px solid #3b82f6',
+                background: 'transparent', border: 'none', borderBottom: '1px solid #8b5cf6',
                 color: '#e2e8f0', fontFamily: 'Inter, sans-serif', fontSize: 14,
                 fontWeight: 600, outline: 'none', width: '100%',
               }}

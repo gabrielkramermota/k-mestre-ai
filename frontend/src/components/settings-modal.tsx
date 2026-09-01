@@ -86,7 +86,7 @@ export default function SettingsModal({
             <img src="/logo.png" alt="K-Mestre AI" style={{ width: 140, height: 'auto' }} />
             <div style={{ fontSize: 20, fontWeight: 700, color: '#f1f5f9' }}>K-Mestre AI</div>
             <div className="mw-section-label" style={{ margin: 0 }}>
-              Versão <span style={{ color: '#93c5fd' }}>v{APP_VERSION}</span>
+              Versão <span style={{ color: '#c4b5fd' }}>v{APP_VERSION}</span>
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: 260 }}>
               Um orquestrador de IA visual: conecte agentes, terminais e notas em um canvas
@@ -95,7 +95,7 @@ export default function SettingsModal({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
               <span>
                 Autor:{' '}
-                <a href="https://www.linkedin.com/in/gabriel-kramer-desenvolvedor/" target="_blank" rel="noreferrer" style={{ color: '#93c5fd' }}>
+                <a href="https://www.linkedin.com/in/gabriel-kramer-desenvolvedor/" target="_blank" rel="noreferrer" style={{ color: '#c4b5fd' }}>
                   Gabriel Kramer Mota
                 </a>
               </span>
@@ -137,4 +137,4 @@ const headerRowStyle: CSSProperties = {
   display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px',
   borderBottom: '1px solid var(--node-border)',
 };
-const linkBtnStyle: CSSProperties = { background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: 14 };
+const linkBtnStyle: CSSProperties = { background: 'none', border: 'none', color: '#8b5cf6', cursor: 'pointer', fontSize: 14 };

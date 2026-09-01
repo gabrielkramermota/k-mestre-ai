@@ -188,7 +188,7 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
         const matches = (edge.source === a && edge.target === b) || (edge.source === b && edge.target === a);
         if (!matches) return edge;
         return active
-          ? { ...edge, animated: true, style: { stroke: '#3b82f6', strokeWidth: 2 } }
+          ? { ...edge, animated: true, style: { stroke: '#8b5cf6', strokeWidth: 2 } }
           : { ...edge, animated: false, style: undefined };
       }));
     };
@@ -335,7 +335,7 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
 
     if (choice.roleName && choice.rolePrompt) {
       try {
-        roleId = await createTerminalRole(terminalId, choice.workingDirectory, choice.roleName, choice.rolePrompt, '#3b82f6');
+        roleId = await createTerminalRole(terminalId, choice.workingDirectory, choice.roleName, choice.rolePrompt, '#8b5cf6');
       } catch (err) {
         toast.error('Falha ao gravar os arquivos do papel: ' + (err as Error).message);
         return;
@@ -433,7 +433,7 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
             style={{ backgroundColor: 'rgba(15, 17, 21, 0.9)', border: '1px solid rgba(255,255,255,0.1)' }}
             nodeColor={n => {
               switch (n.type) {
-                case 'terminal': return '#3b82f6';
+                case 'terminal': return '#8b5cf6';
                 case 'note': return '#10b981';
                 default: return '#f59e0b';
               }
