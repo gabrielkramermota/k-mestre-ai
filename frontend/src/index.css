@@ -392,6 +392,11 @@ body {
 
 /* ── Modais (Terminal, Nova Área de Trabalho, Confirmação) ────────────────────── */
 
+.km-modal .mw-quickstart { flex: 1; padding: 14px 6px; gap: 8px; }
+.km-modal .mw-quickstart:hover { transform: translateY(-1px); }
+.km-modal .mw-secondary-btn:hover { transform: translateY(-1px); }
+.km-quickstart-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
+
 .mw-input {
   width: 100%;
   background: rgba(255, 255, 255, 0.04);

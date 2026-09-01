@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { toast } from 'sonner';
-import { Bot, Code2, Sparkles, TerminalSquare } from 'lucide-react';
+import { Bot, Code2, Network, Sparkles, TerminalSquare, X } from 'lucide-react';
 import { pickFolder } from '../api';
 
 export interface TerminalLaunchChoice {
@@ -91,95 +91,108 @@ export default function TerminalLaunchModal({
 
   return (
     <div style={overlayStyle}>
-      <div style={modalStyle} className="glass-panel">
-        <div style={headerRowStyle}>
-          <button onClick={onCancel} style={linkBtnStyle}>Cancelar</button>
-          <strong>Novo terminal</strong>
-          <button onClick={handleConfirm} style={{ ...linkBtnStyle, fontWeight: 600 }}>Criar</button>
-        </div>
-
-        <div style={{ padding: '14px 18px 10px' }}>
-          <div className="mw-section-label">Início rápido</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {QUICK_START.map(q => (
-              <button
-                key={q.label}
-                onClick={() => { setName(q.label); setCommand(q.command); }}
-                className={`mw-quickstart${command === q.command && name === q.label ? ' active' : ''}`}
-              >
-                <q.icon size={20} />
-                <span style={{ fontSize: 11 }}>{q.label}</span>
-              </button>
-            ))}
+      <div style={modalStyle} className="km-modal">
+        <div style={brandHeaderStyle}>
+          <div style={brandGlow} />
+          <div style={brandHeaderText}>
+            <span style={brandBadge}><Network size={13} /> K-Mestre</span>
+            <div style={brandTitle}>Novo terminal</div>
           </div>
+          <button onClick={onCancel} style={closeBtnStyle} aria-label="Fechar"><X size={18} /></button>
         </div>
 
-        <div className="mw-tabs">
-          <button className={`mw-tab${tab === 'detalhes' ? ' active' : ''}`} onClick={() => setTab('detalhes')}>Detalhes</button>
-          <button className={`mw-tab${tab === 'agente' ? ' active' : ''}`} onClick={() => setTab('agente')}>Agente</button>
-        </div>
+        <div style={bodyStyle}>
+          <div style={{ padding: '14px 18px 14px' }}>
+            <div className="mw-section-label">Agente</div>
+            <div className="km-quickstart-grid">
+              {QUICK_START.map(q => (
+                <button
+                  key={q.label}
+                  onClick={() => { setName(q.label); setCommand(q.command); }}
+                  className={`mw-quickstart${command === q.command && name === q.label ? ' active' : ''}`}
+                >
+                  <q.icon size={20} />
+                  <span style={{ fontSize: 11 }}>{q.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-        <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          {tab === 'detalhes' ? (
-            <>
-              <Field label="Nome do terminal">
-                <input value={name} onChange={e => setName(e.target.value)} className="mw-input" />
-              </Field>
-              <Field label="Comando">
-                <input
-                  value={command}
-                  onChange={e => setCommand(e.target.value)}
-                  placeholder="ex.: claude, codex, ou deixe vazio para shell"
-                  className="mw-input"
-                />
-              </Field>
-              <Field label="Shell">
-                <select value={shell} onChange={e => setShell(e.target.value as 'powershell' | 'cmd')} className="mw-input">
-                  <option value="powershell">PowerShell</option>
-                  <option value="cmd">CMD</option>
-                </select>
-              </Field>
-              <Field label="Diretório de trabalho">
-                <div style={{ display: 'flex', gap: 8 }}>
+          <div className="mw-tabs">
+            <button className={`mw-tab${tab === 'detalhes' ? ' active' : ''}`} onClick={() => setTab('detalhes')}>Detalhes</button>
+            <button className={`mw-tab${tab === 'agente' ? ' active' : ''}`} onClick={() => setTab('agente')}>Agente</button>
+          </div>
+
+          <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            {tab === 'detalhes' ? (
+              <>
+                <Field label="Nome do terminal">
+                  <input value={name} onChange={e => setName(e.target.value)} className="mw-input" />
+                </Field>
+                <Field label="Comando">
                   <input
-                    value={workingDirectory}
-                    onChange={e => setWorkingDirectory(e.target.value)}
+                    value={command}
+                    onChange={e => setCommand(e.target.value)}
+                    placeholder="ex.: claude, codex, ou deixe vazio para shell"
                     className="mw-input"
-                    style={{ flex: 1 }}
                   />
-                  <button onClick={handlePickFolder} disabled={picking} className="mw-secondary-btn">
-                    {picking ? '...' : 'Procurar...'}
-                  </button>
-                </div>
-              </Field>
-              <ToggleField
-                label="Monitorar atividade"
-                description="Detecta a saída do terminal e avisa quando o trabalho termina."
-                checked={monitorActivity}
-                onChange={setMonitorActivity}
-              />
-              <ToggleField
-                label="Maestro"
-                description="Promove este terminal a maestro, capaz de reger o restante do canvas."
-                checked={isMaestro}
-                onChange={setIsMaestro}
-              />
-            </>
-          ) : (
-            <>
-              <Field label="Nome do papel (ex: DESIGN)">
-                <input value={roleName} onChange={e => setRoleName(e.target.value)} className="mw-input" />
-              </Field>
-              <Field label="Prompt do papel">
-                <textarea
-                  value={rolePrompt}
-                  onChange={e => setRolePrompt(e.target.value)}
-                  className="mw-input"
-                  style={{ minHeight: 140, resize: 'vertical' }}
+                </Field>
+                <Field label="Shell">
+                  <select value={shell} onChange={e => setShell(e.target.value as 'powershell' | 'cmd')} className="mw-input">
+                    <option value="powershell">PowerShell</option>
+                    <option value="cmd">CMD</option>
+                  </select>
+                </Field>
+                <Field label="Diretório de trabalho">
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      value={workingDirectory}
+                      onChange={e => setWorkingDirectory(e.target.value)}
+                      className="mw-input"
+                      style={{ flex: 1 }}
+                    />
+                    <button onClick={handlePickFolder} disabled={picking} className="mw-secondary-btn">
+                      {picking ? '...' : 'Procurar...'}
+                    </button>
+                  </div>
+                </Field>
+                <ToggleField
+                  label="Monitorar atividade"
+                  description="Detecta a saída do terminal e avisa quando o trabalho termina."
+                  checked={monitorActivity}
+                  onChange={setMonitorActivity}
                 />
-              </Field>
-            </>
-          )}
+                <ToggleField
+                  label="Maestro"
+                  description="Promove este terminal a maestro, capaz de reger o restante do canvas."
+                  checked={isMaestro}
+                  onChange={setIsMaestro}
+                />
+              </>
+            ) : (
+              <>
+                <Field label="Nome do papel (ex: DESIGN)">
+                  <input value={roleName} onChange={e => setRoleName(e.target.value)} className="mw-input" />
+                </Field>
+                <Field label="Prompt do papel">
+                  <textarea
+                    value={rolePrompt}
+                    onChange={e => setRolePrompt(e.target.value)}
+                    className="mw-input"
+                    style={{ minHeight: 140, resize: 'vertical' }}
+                  />
+                </Field>
+              </>
+            )}
+          </div>
+
+          <div style={footerStyle}>
+            <button onClick={onCancel} style={cancelBtnStyle}>Cancelar</button>
+            <button onClick={handleConfirm} style={createBtnStyle}>
+              <TerminalSquare size={16} />
+              Criar terminal
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -213,15 +226,61 @@ export function ToggleField({
 }
 
 const overlayStyle: CSSProperties = {
-  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
   display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+  backdropFilter: 'blur(4px)',
 };
 const modalStyle: CSSProperties = {
-  width: 420, maxHeight: '88vh', borderRadius: 18, overflow: 'hidden',
+  width: 460, maxHeight: '88vh', borderRadius: 20, overflow: 'hidden',
   display: 'flex', flexDirection: 'column',
+  background: '#15181f',
+  border: '1px solid rgba(255,255,255,0.1)',
+  boxShadow: '0 30px 70px -20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)',
 };
-const headerRowStyle: CSSProperties = {
-  display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px',
-  borderBottom: '1px solid var(--node-border)',
+const brandHeaderStyle: CSSProperties = {
+  position: 'relative', overflow: 'hidden',
+  background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #6d28d9 100%)',
+  color: '#e0e7ff', padding: '20px 20px 18px',
+  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
 };
-const linkBtnStyle: CSSProperties = { background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: 14 };
+const brandGlow: CSSProperties = {
+  position: 'absolute', top: -70, right: -40, width: 240, height: 240,
+  borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.16), transparent 65%)',
+  filter: 'blur(2px)',
+};
+const brandHeaderText: CSSProperties = { position: 'relative', display: 'flex', flexDirection: 'column', gap: 8 };
+const brandBadge: CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+  fontSize: 11, fontWeight: 600, letterSpacing: '0.08em',
+  background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
+  padding: '4px 10px', borderRadius: 999,
+};
+const brandTitle: CSSProperties = { fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.15 };
+const bodyStyle: CSSProperties = {
+  flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0,
+};
+const closeBtnStyle: CSSProperties = {
+  position: 'relative', zIndex: 1,
+  background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
+  color: '#e0e7ff', borderRadius: 9, width: 30, height: 30,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  cursor: 'pointer', transition: 'all 0.15s',
+};
+const footerStyle: CSSProperties = {
+  display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10,
+  padding: '14px 18px', borderTop: '1px solid var(--node-border)',
+  background: 'rgba(255,255,255,0.02)',
+};
+const cancelBtnStyle: CSSProperties = {
+  background: 'transparent', border: '1px solid var(--node-border)', color: 'var(--text-muted)',
+  borderRadius: 10, padding: '9px 16px', fontSize: 13, cursor: 'pointer',
+  fontFamily: 'Inter, sans-serif', transition: 'all 0.15s',
+};
+const createBtnStyle: CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', gap: 8,
+  background: 'linear-gradient(135deg, #7c3aed, #a855f7)', border: 'none',
+  color: '#fff', borderRadius: 10, padding: '9px 18px', fontSize: 13, fontWeight: 600,
+  cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+  boxShadow: '0 8px 20px -6px rgba(124,58,237,0.55)',
+  transition: 'transform 0.12s, box-shadow 0.15s',
+};
