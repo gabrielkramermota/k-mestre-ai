@@ -1,7 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
-import { liveTerminals, sendToTerminal, notifyActivity } from './terminal-registry';
+import { liveTerminals, sendToTerminal, notifyActivity, spawnTerminal, broadcastLayoutChange } from './terminal-registry';
+import { writeAgentFiles, buildLaunchCommand, agentDir } from './agents';
 
 interface CanvasNode {
   id: string;
@@ -55,7 +56,7 @@ function requireTerminalToken(req: Request, res: Response, next: NextFunction): 
   next();
 }
 
-export function orchestratorRouter(dataRoot: string): Router {
+export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router {
   const router = Router();
   router.use(requireTerminalToken);
 
@@ -113,6 +114,93 @@ export function orchestratorRouter(dataRoot: string): Router {
     notifyActivity(targetNode.id, entry.terminalId);
 
     res.json({ ok: true });
+  });
+
+  router.post('/spawn', (req: Request, res: Response) => {
+    const entry = (req as any).terminalEntry;
+    if (!entry.isMaestro) {
+      res.status(403).json({ error: 'Somente o Maestro pode criar novos terminais.' });
+      return;
+    }
+
+    const { name, role, cmd, dir } = req.body as { name?: string; role?: string; cmd?: string; dir?: string };
+    if (!name) {
+      res.status(400).json({ error: 'name e obrigatorio' });
+      return;
+    }
+
+    const layoutPath = layoutPathFor(dataRoot, entry.userId, entry.workspace);
+    let layout: any = { nodes: [], edges: [] };
+    if (fs.existsSync(layoutPath)) {
+      try { layout = JSON.parse(fs.readFileSync(layoutPath, 'utf-8')); } catch { layout = { nodes: [], edges: [] }; }
+    }
+    if (!Array.isArray(layout.nodes)) layout.nodes = [];
+    if (!Array.isArray(layout.edges)) layout.edges = [];
+
+    const sourceNode = layout.nodes.find((n: any) => n.id === entry.terminalId);
+    const defaultDir = (sourceNode?.data?.workingDirectory as string) || '';
+    const hasCmd = typeof cmd === 'string';
+    const defaultCmd = (sourceNode?.data?.aiCommand as string) || undefined;
+    const workingDirectory = dir?.trim() || defaultDir;
+    if (!workingDirectory) {
+      res.status(400).json({ error: 'Maestro sem diretorio de trabalho definido; informe --dir.' });
+      return;
+    }
+    const aiCommand = hasCmd ? (cmd.trim() || undefined) : defaultCmd;
+
+    const terminalId = `terminal-${Date.now()}`;
+    const rolePrompt = role?.trim() || null;
+    const shell = 'powershell';
+
+    writeAgentFiles({
+      terminalId,
+      label: name,
+      shell,
+      aiCommand,
+      workspace: entry.workspace,
+      workingDirectory,
+      isMaestro: false,
+      roleName: rolePrompt ? name : null,
+      rolePrompt,
+    });
+
+    const instructionsPath = path.join(agentDir(workingDirectory, terminalId), 'CLAUDE.md');
+    const finalCommand = buildLaunchCommand(aiCommand, instructionsPath, shell);
+
+    spawnTerminal({
+      terminalId,
+      userId: entry.userId,
+      workspace: entry.workspace,
+      shell,
+      cwd: workingDirectory,
+      workingDirectory,
+      aiCommand: finalCommand,
+      isMaestro: false,
+      roleName: rolePrompt ? name : null,
+      logPath: path.join(dataRoot, entry.userId, 'logs', `${terminalId}.log`),
+      cliShimDir,
+    });
+
+    layout.nodes.push({
+      id: terminalId,
+      type: 'terminal',
+      position: { x: Math.random() * 500 + 220, y: Math.random() * 400 + 80 },
+      data: {
+        label: name,
+        shell,
+        aiCommand,
+        workingDirectory,
+        monitorActivity: true,
+        isMaestro: false,
+        roleName: rolePrompt ? name : undefined,
+        rolePrompt: rolePrompt || undefined,
+      },
+    });
+    layout.edges.push({ source: entry.terminalId, target: terminalId, id: `xy-edge__${entry.terminalId}-${terminalId}` });
+    fs.writeFileSync(layoutPath, JSON.stringify(layout, null, 2), 'utf-8');
+
+    broadcastLayoutChange(entry.userId, entry.workspace);
+    res.json({ ok: true, terminalId, name });
   });
 
   router.get('/output', (req: Request, res: Response) => {
