@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { prisma, migrate } from './db';
 import { liveTerminals, spawnTerminal, attachWs, detachWs, killTerminal } from './terminal-registry';
-import { writeAgentFiles, buildLaunchCommand, agentDir } from './agents';
+import { writeAgentFiles, buildLaunchCommand, agentDir, notesDir } from './agents';
 import { ensureCliShim } from './cli-shim';
 import { orchestratorRouter } from './orchestrator-routes';
 import { pickFolder } from './folder-picker';
@@ -32,8 +32,7 @@ app.use(cookieParser());
 
 const appRoot = path.resolve(__dirname, '../');
 const dataRoot = path.join(appRoot, 'data');
-const backendRoot = path.join(appRoot, 'backend');
-const cliShimDir = ensureCliShim(backendRoot);
+const cliShimDir = ensureCliShim(appRoot);
 
 if (!fs.existsSync(dataRoot)) {
   fs.mkdirSync(dataRoot, { recursive: true });
@@ -77,6 +76,21 @@ function lastActiveWorkspaceFile(userId: string): string {
 function lastActiveWorkspace(userId: string): string {
   const f = lastActiveWorkspaceFile(userId);
   return fs.existsSync(f) ? fs.readFileSync(f, 'utf-8').trim() || 'default' : 'default';
+}
+
+// Notas vivem em <projeto>/.kmestre/notes/. Resolve via defaultWorkingDirectory do
+// workspace ativo; se o layout ainda nao definiu, cai no vault legado do backend.
+function userNotesRoot(userId: string): string {
+  try {
+    const workspace = lastActiveWorkspace(userId);
+    const layoutPath = layoutFilePath(userId, workspace);
+    if (fs.existsSync(layoutPath)) {
+      const layout = JSON.parse(fs.readFileSync(layoutPath, 'utf-8'));
+      const wd = layout?.defaultWorkingDirectory as string | undefined;
+      if (wd) return notesDir(wd);
+    }
+  } catch {}
+  return userVaultPath(userId);
 }
 
 function getDirectoryTree(dirPath: string): any {
@@ -168,11 +182,13 @@ app.post('/api/auth/account', async (req, res) => {
   res.json({ success: true, username: newUsername || user.username });
 });
 
-// ── Vault ─────────────────────────────────────────────────────────────────────
+// ── Vault (notas) ────────────────────────────────────────────────────────────
 
 app.get('/api/vault/files', (req, res) => {
   try {
-    const files = fs.readdirSync(userVaultPath(req.userId!)).filter(f => f.endsWith('.md'));
+    const root = userNotesRoot(req.userId!);
+    fs.mkdirSync(root, { recursive: true });
+    const files = fs.readdirSync(root).filter(f => f.endsWith('.md'));
     res.json(files);
   } catch {
     res.status(500).json({ error: 'Failed to read vault' });
@@ -182,7 +198,8 @@ app.get('/api/vault/files', (req, res) => {
 app.get('/api/vault/files/:filename', (req, res) => {
   const { filename } = req.params;
   if (!filename.endsWith('.md')) return res.status(400).json({ error: 'Only .md files allowed' });
-  const filePath = path.join(userVaultPath(req.userId!), filename);
+  const root = userNotesRoot(req.userId!);
+  const filePath = path.join(root, filename);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
   res.send(fs.readFileSync(filePath, 'utf-8'));
 });
@@ -190,7 +207,9 @@ app.get('/api/vault/files/:filename', (req, res) => {
 app.post('/api/vault/files/:filename', (req, res) => {
   const { filename } = req.params;
   if (!filename.endsWith('.md')) return res.status(400).json({ error: 'Only .md files allowed' });
-  fs.writeFileSync(path.join(userVaultPath(req.userId!), filename), req.body.content || '', 'utf-8');
+  const root = userNotesRoot(req.userId!);
+  fs.mkdirSync(root, { recursive: true });
+  fs.writeFileSync(path.join(root, filename), req.body.content || '', 'utf-8');
   res.json({ success: true });
 });
 
@@ -335,6 +354,19 @@ async function respawnPersistedTerminals(cliShimDir: string): Promise<void> {
     } catch {
       continue;
     }
+
+    // Migração única: notas legadas do vault do backend → .kmestre/notes/ do projeto.
+    try {
+      const legacy = userVaultPath(userId);
+      const target = userNotesRoot(userId);
+      if (legacy !== target && fs.existsSync(legacy)) {
+        fs.mkdirSync(target, { recursive: true });
+        for (const f of fs.readdirSync(legacy).filter(f => f.endsWith('.md'))) {
+          const dest = path.join(target, f);
+          if (!fs.existsSync(dest)) fs.copyFileSync(path.join(legacy, f), dest);
+        }
+      }
+    } catch {}
 
 for (const node of layout.nodes || []) {
       if (node.type !== 'terminal') continue;

@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
-import { liveTerminals, sendToTerminal, notifyActivity, spawnTerminal, broadcastLayoutChange } from './terminal-registry';
-import { writeAgentFiles, buildLaunchCommand, agentDir } from './agents';
+import { liveTerminals, sendToTerminal, notifyActivity, spawnTerminal, killTerminal, broadcastLayoutChange } from './terminal-registry';
+import { writeAgentFiles, buildLaunchCommand, agentDir, notesDir } from './agents';
 
 interface CanvasNode {
   id: string;
@@ -75,7 +75,7 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
       }));
 
     const notes = layout.nodes
-      .filter(n => n.type === 'note' && connectedIds.has(n.id))
+      .filter(n => n.type === 'note' && (entry.isMaestro || connectedIds.has(n.id)))
       .map(n => ({ filename: (n.data?.filename as string) || '' }));
 
     res.json({ teammates, notes });
@@ -148,6 +148,17 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
     }
     const aiCommand = hasCmd ? (cmd.trim() || undefined) : defaultCmd;
 
+    // Posiciona o novo terminal em grade, afastado do maestro (direita), sem sobrepor.
+    const sourcePos = sourceNode?.position || { x: 0, y: 0 };
+    const siblings = layout.edges.filter((e: any) => e.source === entry.terminalId).length;
+    const gap = 720; // largura do terminal (600) + margem
+    const col = siblings % 3;
+    const row = Math.floor(siblings / 3);
+    const position = {
+      x: sourcePos.x + 400 + col * gap,
+      y: sourcePos.y + row * 480,
+    };
+
     const terminalId = `terminal-${Date.now()}`;
     const rolePrompt = role?.trim() || null;
     const shell = 'powershell';
@@ -186,7 +197,8 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
     layout.nodes.push({
       id: terminalId,
       type: 'terminal',
-      position: { x: Math.random() * 500 + 220, y: Math.random() * 400 + 80 },
+      position,
+      style: { width: 600, height: 380 },
       data: {
         label: name,
         shell,
@@ -204,6 +216,86 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
 
     broadcastLayoutChange(entry.userId, entry.workspace);
     res.json({ ok: true, terminalId, name });
+  });
+
+  router.post('/self', (req: Request, res: Response) => {
+    const entry = (req as any).terminalEntry;
+    const { role, prompt, color, label } = req.body as {
+      role?: string;
+      prompt?: string;
+      color?: string;
+      label?: string;
+    };
+    if (!prompt?.trim()) {
+      res.status(400).json({ error: 'prompt e obrigatorio' });
+      return;
+    }
+
+    const layoutPath = layoutPathFor(dataRoot, entry.userId, entry.workspace);
+    let layout: any = { nodes: [], edges: [] };
+    if (fs.existsSync(layoutPath)) {
+      try { layout = JSON.parse(fs.readFileSync(layoutPath, 'utf-8')); } catch { layout = { nodes: [], edges: [] }; }
+    }
+    if (!Array.isArray(layout.nodes)) layout.nodes = [];
+    if (!Array.isArray(layout.edges)) layout.edges = [];
+
+    const node = layout.nodes.find((n: any) => n.id === entry.terminalId);
+    const data = node?.data || {};
+    const workingDirectory = (data.workingDirectory as string) || entry.workingDirectory;
+    const shell = data.shell === 'cmd' ? 'cmd' : 'powershell';
+    const roleName = role?.trim() || (data.roleName as string) || null;
+    const roleColor = color?.trim() || (data.roleColor as string) || null;
+
+    writeAgentFiles({
+      terminalId: entry.terminalId,
+      label: label?.trim() || (data.label as string) || entry.terminalId,
+      shell,
+      aiCommand: data.aiCommand as string | undefined,
+      workspace: entry.workspace,
+      workingDirectory,
+      isMaestro: entry.isMaestro,
+      roleName,
+      rolePrompt: prompt.trim(),
+      roleColor,
+    });
+
+    // Atualiza o layout (label, papel, cor) para o canvas refletir.
+    if (node) {
+      if (label?.trim()) node.data = { ...data, label: label.trim() };
+      node.data = {
+        ...node.data,
+        roleName: roleName || undefined,
+        rolePrompt: prompt.trim(),
+        roleColor: roleColor || undefined,
+      };
+      fs.writeFileSync(layoutPath, JSON.stringify(layout, null, 2), 'utf-8');
+    }
+
+    // Reinicia o PTY com o novo prompt injetado.
+    killTerminal(entry.terminalId);
+    const instructionsPath = path.join(agentDir(workingDirectory, entry.terminalId), 'CLAUDE.md');
+    const aiCommand = buildLaunchCommand(data.aiCommand as string | undefined, instructionsPath, shell);
+    try {
+      spawnTerminal({
+        terminalId: entry.terminalId,
+        userId: entry.userId,
+        workspace: entry.workspace,
+        shell,
+        cwd: workingDirectory,
+        workingDirectory,
+        aiCommand,
+        isMaestro: entry.isMaestro,
+        roleName,
+        logPath: path.join(dataRoot, entry.userId, 'logs', `${entry.terminalId}.log`),
+        cliShimDir,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    broadcastLayoutChange(entry.userId, entry.workspace);
+    res.json({ ok: true });
   });
 
   router.get('/output', (req: Request, res: Response) => {
@@ -241,8 +333,25 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
 
   
 
-  function notePath(userId: string, filename: string): string {
-    return path.join(dataRoot, userId, 'vault', filename);
+  function layoutWithMeta(dataRoot: string, userId: string, workspace: string): CanvasLayout & { defaultWorkingDirectory?: string } {
+    const filePath = layoutPathFor(dataRoot, userId, workspace);
+    if (!fs.existsSync(filePath)) return { nodes: [], edges: [] };
+    try {
+      const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      return {
+        nodes: parsed.nodes || [],
+        edges: parsed.edges || [],
+        defaultWorkingDirectory: parsed.defaultWorkingDirectory,
+      };
+    } catch {
+      return { nodes: [], edges: [] };
+    }
+  }
+
+  function notePath(entry: any, filename: string): string {
+    const layout = layoutWithMeta(dataRoot, entry.userId, entry.workspace);
+    const wd = layout.defaultWorkingDirectory || entry.workingDirectory;
+    return path.join(notesDir(wd), filename);
   }
 
   function isNoteConnected(entry: any, layout: CanvasLayout, filename: string): boolean {
@@ -263,7 +372,7 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
       res.status(404).json({ error: `Nota '${name}' nao esta conectada a este terminal.` });
       return;
     }
-    const filePath = notePath(entry.userId, name);
+    const filePath = notePath(entry, name);
     if (!fs.existsSync(filePath)) {
       res.status(404).json({ error: `Arquivo da nota '${name}' nao encontrado.` });
       return;
@@ -282,8 +391,8 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
       res.status(404).json({ error: `Nota '${name}' nao esta conectada a este terminal.` });
       return;
     }
-    fs.mkdirSync(path.dirname(notePath(entry.userId, name)), { recursive: true });
-    fs.writeFileSync(notePath(entry.userId, name), content || '', 'utf-8');
+    fs.mkdirSync(path.dirname(notePath(entry, name)), { recursive: true });
+    fs.writeFileSync(notePath(entry, name), content || '', 'utf-8');
     res.json({ ok: true });
   });
 
@@ -293,8 +402,8 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
     const base = (name && /^[^\\/]+$/.test(name) ? name.replace(/[^a-zA-Z0-9_-]/g, '_') : null) || `Nota-${Date.now()}`;
     const filename = `${base}.md`;
 
-    fs.mkdirSync(path.dirname(notePath(entry.userId, filename)), { recursive: true });
-    fs.writeFileSync(notePath(entry.userId, filename), content || '', 'utf-8');
+    fs.mkdirSync(path.dirname(notePath(entry, filename)), { recursive: true });
+    fs.writeFileSync(notePath(entry, filename), content || '', 'utf-8');
 
     const layoutPath = layoutPathFor(dataRoot, entry.userId, entry.workspace);
     let layout: any = { nodes: [], edges: [] };
