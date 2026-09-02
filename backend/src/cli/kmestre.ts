@@ -203,7 +203,40 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.error('Uso: kmestre list | kmestre send <alvo> <mensagem> | kmestre check <alvo> | kmestre spawn "Nome" [--role ...] [--color "#hex"] | kmestre note read|write|create ...');
+  if (cmd === 'self') {
+    let role: string | undefined;
+    let prompt: string | undefined;
+    let color: string | undefined;
+    let label: string | undefined;
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--role') { role = args[++i]; }
+      else if (args[i] === '--prompt') { prompt = args[++i]; }
+      else if (args[i] === '--color') { color = args[++i]; }
+      else if (args[i] === '--label') { label = args[++i]; }
+    }
+    if (!prompt) {
+      console.error('Uso: kmestre self --role "<nome do papel>" --prompt "<prompt>" [--color "#hex"] [--label "Nome"]');
+      process.exitCode = 1;
+      return;
+    }
+
+    const res = await fetch(`${api}/api/orchestrator/self`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Kmestre-Token': token },
+      body: JSON.stringify({ role, prompt, color, label }),
+    });
+    const data = (await res.json()) as { ok?: boolean; error?: string };
+    if (!res.ok) {
+      console.error(`kmestre: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    console.log('kmestre: seu papel/prompt foi atualizado. O terminal sera reiniciado.');
+    return;
+  }
+
+  console.error('Uso: kmestre list | kmestre send <alvo> <mensagem> | kmestre check <alvo> | kmestre spawn "Nome" [--role ...] [--color "#hex"] | kmestre self --prompt "..." | kmestre note read|write|create ...');
   process.exitCode = 1;
 }
 

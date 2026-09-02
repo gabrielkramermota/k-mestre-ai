@@ -15,15 +15,28 @@ Você está rodando dentro do K-Mestre, um canvas que conecta agentes/terminais.
   \`kmestre spawn "Nome" --role "<prompt do papel>" [--cmd claude|codex|opencode] [--dir "caminho"] [--color "#hex"]\`.
   Só o Maestro pode criar; o novo agente nasce conectado a você. Escolha uma cor da paleta
   (ex.: #8b5cf6 roxo, #3b82f6 azul, #10b981 verde, #f59e0b laranja, #ef4444 vermelho, #ec4899 rosa).
+- IMPORTANTE: NÃO use suas subagentes/peers internos para montar o time do usuário.
+  Especialistas do K-Mestre são terminais reais do canvas, criados SOMENTE com
+  \`kmestre spawn\`. Se \`kmestre\` não estiver no PATH, rode \`where kmestre\`
+  ou informe o erro — não substitua por ferramentas internas.
+- Para definir/atualizar o SEU próprio papel e prompt (ex.: o prompt de MAESTRO):
+  \`kmestre self --role "<nome>" --prompt "<seu prompt>" [--color "#hex"] [--label "Nome"]\`.
+  O terminal reinicia com o novo prompt.
 - Um terminal comum (sem papel), apenas com um objetivo da conversa:
   \`kmestre spawn "Nome"\` (herda seu comando) ou \`kmestre spawn "Nome" --cmd ""\` (shell puro).
 - Notas conectadas: \`kmestre list\` mostra as notas do canvas. Leia com
   \`kmestre note read <nome.md>\`, edite com \`kmestre note write <nome.md> "<conteudo>"\`
   e crie com \`kmestre note create "<conteudo>" [--name "Nome"]\`.
+- As notas também ficam como arquivos em \`.kmestre/notes/\` dentro do projeto;
+  você pode lê-las/gravá-las diretamente, além do CLI kmestre.
 `;
 
 export function agentDir(workingDirectory: string, terminalId: string): string {
   return path.join(workingDirectory, '.kmestre', 'agents', terminalId);
+}
+
+export function notesDir(workingDirectory: string): string {
+  return path.join(workingDirectory, '.kmestre', 'notes');
 }
 
 function kmestreRoot(workingDirectory: string): string {
@@ -75,6 +88,19 @@ export function writeAgentFiles(params: AgentFilesParams): void {
   fs.writeFileSync(path.join(dir, 'CLAUDE.md'), instructions, 'utf-8');
   fs.writeFileSync(path.join(dir, 'AGENTS.md'), instructions, 'utf-8');
 
+  // Pré-aprova APENAS os comandos kmestre (orquestração do canvas). Todo o resto continua pedindo aprovação.
+  const claudeSettings = {
+    permissions: {
+      allow: [
+        'Bash(kmestre:*)',
+        'Bash(*kmestre.cmd:*)',
+        'Bash(where:*)',
+        'Bash(where.exe:*)',
+      ],
+    },
+  };
+  fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify(claudeSettings, null, 2), 'utf-8');
+
   fs.writeFileSync(
     path.join(dir, 'terminal.json'),
     JSON.stringify(
@@ -104,7 +130,7 @@ export function removeAgentFiles(workingDirectory: string, terminalId: string): 
 }
 
 // Builds the launch command that injects the instructions file into the agent.
-// File-based where the CLI supports it (Claude); inline for Codex. Shell puro / desconhecido: sem injeção.
+// Também pré-aprova os comandos kmestre para que o agente orquestre sem travar.
 export function buildLaunchCommand(
   aiCommand: string | undefined,
   instructionsPath: string,
@@ -113,10 +139,11 @@ export function buildLaunchCommand(
   if (!aiCommand?.trim()) return aiCommand;
   const base = aiCommand.trim();
   const lower = base.toLowerCase();
+  const q = '"';
 
   if (lower.startsWith('claude')) {
-    const q = shell === 'cmd' ? '"' : '"';
-    return `${base} --append-system-prompt-file ${q}${instructionsPath}${q}`;
+    const settingsPath = path.join(path.dirname(instructionsPath), 'settings.json');
+    return `${base} --append-system-prompt-file ${q}${instructionsPath}${q} --settings ${q}${settingsPath}${q}`;
   }
 
   if (lower.startsWith('codex')) {
@@ -127,9 +154,13 @@ export function buildLaunchCommand(
       .replace(/\r?\n/g, '\\n');
     if (shell === 'powershell') {
       const kv = `developer_instructions="${toml}"`;
-      return `${base} --config '${kv.replace(/'/g, "''")}'`;
+      return `${base} --ask-for-approval never --config '${kv.replace(/'/g, "''")}'`;
     }
-    return `${base} --config "developer_instructions=${toml.replace(/"/g, '""')}"`;
+    return `${base} --ask-for-approval never --config "developer_instructions=${toml.replace(/"/g, '""')}"`;
+  }
+
+  if (lower.startsWith('opencode')) {
+    return `${base} --auto`;
   }
 
   return base;

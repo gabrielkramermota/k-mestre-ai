@@ -46,6 +46,8 @@ export interface SpawnParams {
   cliShimDir: string;
 }
 
+const port = Number(process.env.PORT) || 8080;
+
 export function spawnTerminal(params: SpawnParams): LiveTerminal {
   const shellBin = params.shell === 'cmd' ? 'cmd.exe' : 'powershell.exe';
   const token = crypto.randomUUID();
@@ -63,7 +65,7 @@ export function spawnTerminal(params: SpawnParams): LiveTerminal {
       ...(process.env as Record<string, string>),
       KMESTRE_TERMINAL_ID: params.terminalId,
       KMESTRE_TOKEN: token,
-      KMESTRE_API: 'http://localhost:3001',
+      KMESTRE_API: `http://localhost:${port}`,
       PATH: `${params.cliShimDir}${path.delimiter}${process.env.PATH}`,
     },
   });
