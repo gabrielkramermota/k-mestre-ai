@@ -128,21 +128,24 @@ export async function pickFolder(): Promise<string | null> {
   return data.path ?? null;
 }
 
-export async function createTerminalRole(
+export async function updateTerminalAgent(
   terminalId: string,
-  workingDirectory: string,
-  roleName: string,
-  rolePrompt: string,
-  roleColor: string,
-): Promise<string> {
-  const res = await fetchJson(`${API_ROOT}/terminals/${encodeURIComponent(terminalId)}/role`, {
+  data: {
+    label: string;
+    shell: 'powershell' | 'cmd';
+    aiCommand?: string;
+    workingDirectory: string;
+    isMaestro: boolean;
+    roleName?: string;
+    rolePrompt?: string;
+  },
+): Promise<void> {
+  const res = await fetchJson(`${API_ROOT}/terminals/${encodeURIComponent(terminalId)}/agent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workingDirectory, roleName, rolePrompt, roleColor }),
+    body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to create role files');
-  const data = await res.json();
-  return data.roleId;
+  if (!res.ok) throw new Error('Failed to update agent files');
 }
 
 // ── Legacy ─────────────────────────────────────────────────────────────────────
