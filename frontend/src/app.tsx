@@ -14,7 +14,7 @@ import type { NodeChange, EdgeChange, Node, Edge, Connection } from '@xyflow/rea
 import { ConnectionMode } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Toaster, toast } from 'sonner';
-import { TerminalSquare, StickyNote, FolderTree, Plus, Trash2, FolderOpen, LogOut, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react';
+import { TerminalSquare, StickyNote, FolderTree, Plus, Trash2, FolderOpen, LogOut, PanelLeftClose, PanelLeftOpen, Settings, Hand, MousePointer2 } from 'lucide-react';
 import TerminalNode from './components/terminal-node';
 import LoadingScreen from './components/loading-screen';
 import NoteNode from './components/note-node';
@@ -26,7 +26,7 @@ import NewWorkspaceModal from './components/new-workspace-modal';
 import type { NewWorkspaceChoice } from './components/new-workspace-modal';
 import ConfirmModal from './components/confirm-modal';
 import SettingsModal from './components/settings-modal';
-import { getLayout, saveLayout, getWorkspaces, deleteWorkspace, me, logout, createTerminalRole } from './api';
+import { getLayout, saveLayout, getWorkspaces, deleteWorkspace, me, logout, deleteTerminal } from './api';
 
 const nodeTypes = {
   terminal: TerminalNode,
@@ -166,6 +166,7 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
   defaultWorkingDirectoryRef.current = defaultWorkingDirectory;
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tool, setTool] = useState<'move' | 'select'>('move');
 
   // Load layout for workspace
   const loadWorkspace = useCallback(async (ws: string) => {
@@ -208,6 +209,22 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
     return () => window.removeEventListener('terminal-activity', handler);
   }, []);
 
+  // Um agente spawnou/alterou o layout (kmestre spawn) — recarrega sem flash
+  useEffect(() => {
+    const handler = () => {
+      const ws = currentWorkspaceRef.current;
+      if (!ws) return;
+      getLayout(ws).then(layout => {
+        if (layout?.nodes) {
+          setNodes(layout.nodes);
+          setEdges((layout.edges || []).map((e: Edge) => ({ ...e, style: undefined, animated: false })));
+        }
+      }).catch(() => {});
+    };
+    window.addEventListener('layout-changed', handler);
+    return () => window.removeEventListener('layout-changed', handler);
+  }, []);
+
   // Load workspaces list, open the first one if any exist
   useEffect(() => {
     getWorkspaces().then(async list => {
@@ -231,6 +248,20 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
     ).catch(() => {});
   }, [loaded]);
 
+  // Edicao de terminal vinda do proprio no (renomear/editar) — persiste no layout
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { id: nodeId, data: patch } = (e as CustomEvent).detail as { id: string; data: Record<string, unknown> };
+      setNodes(nds => {
+        const next = nds.map(n => n.id === nodeId ? { ...n, data: { ...n.data, ...patch } } : n);
+        persistLayout(next, edges);
+        return next;
+      });
+    };
+    window.addEventListener('terminal-update', handler);
+    return () => window.removeEventListener('terminal-update', handler);
+  }, [edges, persistLayout]);
+
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       setNodes(nds => {
@@ -241,6 +272,13 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
           c.type === 'dimensions'
         );
         if (shouldSave) persistLayout(next, edges);
+
+        // Mata PTYs de terminais removidos via teclado/box-select (Delete/Backspace)
+        for (const c of changes) {
+          if (c.type === 'remove' && nds.find(n => n.id === c.id)?.type === 'terminal') {
+            deleteTerminal(c.id).catch(() => {});
+          }
+        }
         return next;
       });
     },
@@ -338,16 +376,6 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
   const handleTerminalConfirm = async (choice: TerminalLaunchChoice) => {
     setTerminalModalOpen(false);
     const terminalId = `terminal-${Date.now()}`;
-    let roleId: string | undefined;
-
-    if (choice.roleName && choice.rolePrompt) {
-      try {
-        roleId = await createTerminalRole(terminalId, choice.workingDirectory, choice.roleName, choice.rolePrompt, '#8b5cf6');
-      } catch (err) {
-        toast.error('Não foi possível criar o papel: ' + (err as Error).message);
-        return;
-      }
-    }
 
     addNode('terminal', {
       label: choice.label,
@@ -358,7 +386,6 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
       isMaestro: choice.isMaestro,
       roleName: choice.roleName || undefined,
       rolePrompt: choice.rolePrompt || undefined,
-      roleId,
     }, terminalId);
   };
 
@@ -421,9 +448,30 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
             style: { stroke: '#475569', strokeWidth: 1.5, strokeDasharray: '6 4' },
           }}
           panOnScroll
+          panOnDrag={tool === 'move'}
+          selectionOnDrag={tool === 'select'}
+          selectionKeyCode={null}
+          multiSelectionKeyCode={null}
           fitView
         >
           <Panel position="top-center" className="ui-panel glass-panel">
+            <div className="ui-tool-group">
+              <button
+                className={`ui-btn${tool === 'move' ? ' active' : ''}`}
+                onClick={() => setTool('move')}
+                title="Mover (arraste para navegar o canvas)"
+              >
+                <Hand size={15} /> Mover
+              </button>
+              <button
+                className={`ui-btn${tool === 'select' ? ' active' : ''}`}
+                onClick={() => setTool('select')}
+                title="Selecionar (arraste para marcar vários nós)"
+              >
+                <MousePointer2 size={15} /> Selecionar
+              </button>
+            </div>
+            <span className="ui-panel-sep" />
             <button className="ui-btn" onClick={() => setTerminalModalOpen(true)}>
               <TerminalSquare size={15} /> Terminal
             </button>
