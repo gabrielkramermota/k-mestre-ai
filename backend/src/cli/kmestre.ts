@@ -166,7 +166,42 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.error('Uso: kmestre list | kmestre send <alvo> <mensagem> | kmestre check <alvo> | kmestre note read|write|create ...');
+  if (cmd === 'spawn') {
+    let name: string | undefined;
+    let role: string | undefined;
+    let aiCmd: string | undefined;
+    let dir: string | undefined;
+    const positional: string[] = [];
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === '--role') { role = args[++i]; }
+      else if (args[i] === '--cmd') { aiCmd = args[++i]; }
+      else if (args[i] === '--dir') { dir = args[++i]; }
+      else { positional.push(args[i]); }
+    }
+    name = positional.join(' ');
+    if (!name) {
+      console.error('Uso: kmestre spawn "Nome" [--role "<prompt do papel>"] [--cmd claude|codex|opencode] [--dir "C:\\caminho"]');
+      process.exitCode = 1;
+      return;
+    }
+
+    const res = await fetch(`${api}/api/orchestrator/spawn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Kmestre-Token': token },
+      body: JSON.stringify({ name, role, cmd: aiCmd, dir }),
+    });
+    const data = (await res.json()) as { ok?: boolean; terminalId?: string; name?: string; error?: string };
+    if (!res.ok) {
+      console.error(`kmestre: erro (${res.status}) - ${data.error || 'falha desconhecida'}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    console.log(`kmestre: terminal "${data.name}" criado (id: ${data.terminalId}).`);
+    return;
+  }
+
+  console.error('Uso: kmestre list | kmestre send <alvo> <mensagem> | kmestre check <alvo> | kmestre spawn "Nome" [--role ...] | kmestre note read|write|create ...');
   process.exitCode = 1;
 }
 

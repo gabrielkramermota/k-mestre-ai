@@ -6,12 +6,12 @@ import { WebSocketServer, WebSocket } from 'ws';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { execFileSync } from 'child_process';
 import { prisma, migrate } from './db';
 import { liveTerminals, spawnTerminal, attachWs, detachWs, killTerminal } from './terminal-registry';
-import { writeRoleFiles, roleDir } from './roles';
+import { writeAgentFiles, buildLaunchCommand, agentDir } from './agents';
 import { ensureCliShim } from './cli-shim';
 import { orchestratorRouter } from './orchestrator-routes';
+import { pickFolder } from './folder-picker';
 import {
   verifyPassword,
   hashPassword,
@@ -32,6 +32,8 @@ app.use(cookieParser());
 
 const appRoot = path.resolve(__dirname, '../');
 const dataRoot = path.join(appRoot, 'data');
+const backendRoot = path.join(appRoot, 'backend');
+const cliShimDir = ensureCliShim(backendRoot);
 
 if (!fs.existsSync(dataRoot)) {
   fs.mkdirSync(dataRoot, { recursive: true });
@@ -131,7 +133,7 @@ app.get('/api/auth/me', async (req, res) => {
   res.json({ id: userId, username: user?.username });
 });
 
-app.use('/api/orchestrator', orchestratorRouter(dataRoot));
+app.use('/api/orchestrator', orchestratorRouter(dataRoot, cliShimDir));
 app.use('/api', requireAuth);
 
 app.post('/api/auth/account', async (req, res) => {
@@ -203,21 +205,8 @@ app.get('/api/workspace/tree', (req, res) => {
 });
 
 app.get('/api/pick-folder', requireAuth, (_req, res) => {
-  const script = [
-    'Add-Type -AssemblyName System.Windows.Forms',
-    '$dialog = New-Object System.Windows.Forms.FolderBrowserDialog',
-    "$dialog.Description = 'Escolha o diretorio de trabalho'",
-    'if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {',
-    '  Write-Output $dialog.SelectedPath',
-    '}',
-  ].join('\n');
-
   try {
-    const output = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
-      encoding: 'utf-8',
-      timeout: 120_000,
-    }).trim();
-    res.json({ path: output || null });
+    res.json({ path: pickFolder() });
   } catch (err: any) {
     res.status(500).json({ error: 'Falha ao abrir seletor de pasta: ' + err.message });
   }
@@ -228,30 +217,35 @@ app.delete('/api/terminals/:id', requireAuth, (req, res) => {
   res.json({ ok });
 });
 
-app.post('/api/terminals/:id/role', requireAuth, (req, res) => {
-  const { workingDirectory, roleName, rolePrompt, roleColor, roleId } = req.body as {
+app.post('/api/terminals/:id/agent', requireAuth, (req, res) => {
+  const terminalId = String(req.params.id);
+  const body = req.body as {
+    label?: string;
+    shell?: string;
+    aiCommand?: string;
     workingDirectory?: string;
-    roleName?: string;
-    rolePrompt?: string;
-    roleColor?: string;
-    roleId?: string;
+    isMaestro?: boolean;
+    roleName?: string | null;
+    rolePrompt?: string | null;
   };
 
-  if (!workingDirectory || !roleName || !rolePrompt) {
-    return res.status(400).json({ error: 'workingDirectory, roleName e rolePrompt sao obrigatorios' });
+  if (!body.workingDirectory) {
+    return res.status(400).json({ error: 'workingDirectory e obrigatorio' });
   }
 
-  const finalRoleId = roleId || crypto.randomUUID();
-
   try {
-    writeRoleFiles({
-      roleId: finalRoleId,
-      roleName,
-      rolePrompt,
-      roleColor: roleColor || '#3b82f6',
-      workingDirectory,
+    writeAgentFiles({
+      terminalId,
+      label: body.label || terminalId,
+      shell: body.shell === 'cmd' ? 'cmd' : 'powershell',
+      aiCommand: body.aiCommand || undefined,
+      workspace: 'default',
+      workingDirectory: body.workingDirectory,
+      isMaestro: !!body.isMaestro,
+      roleName: body.roleName || null,
+      rolePrompt: body.rolePrompt || null,
     });
-    res.json({ roleId: finalRoleId });
+    res.json({ ok: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -340,33 +334,50 @@ async function respawnPersistedTerminals(cliShimDir: string): Promise<void> {
       continue;
     }
 
-    for (const node of layout.nodes || []) {
+for (const node of layout.nodes || []) {
       if (node.type !== 'terminal') continue;
       const data = node.data || {};
       if (!data.workingDirectory) continue; // no criado antes desta feature, sem os campos novos
 
-      const cwd = data.roleName && data.roleId
-        ? roleDir(data.workingDirectory, data.roleId)
-        : data.workingDirectory;
+      const shell = data.shell === 'cmd' ? 'cmd' : 'powershell';
+      const workingDirectory = data.workingDirectory;
+      const terminalId = node.id;
 
-      spawnTerminal({
-        terminalId: node.id,
-        userId,
-        workspace,
-        shell: data.shell === 'cmd' ? 'cmd' : 'powershell',
-        cwd,
+      writeAgentFiles({
+        terminalId,
+        label: data.label || terminalId,
+        shell,
         aiCommand: data.aiCommand,
+        workspace,
+        workingDirectory,
         isMaestro: !!data.isMaestro,
         roleName: data.roleName || null,
-        logPath: path.join(userLogsPath(userId), `${node.id}-boot.log`),
-        cliShimDir,
+        rolePrompt: data.rolePrompt || null,
       });
+
+      const instructionsPath = path.join(agentDir(workingDirectory, terminalId), 'CLAUDE.md');
+      const aiCommand = buildLaunchCommand(data.aiCommand, instructionsPath, shell);
+
+      try {
+        spawnTerminal({
+          terminalId,
+          userId,
+          workspace,
+          shell,
+          cwd: workingDirectory,
+          workingDirectory,
+          aiCommand,
+          isMaestro: !!data.isMaestro,
+          roleName: data.roleName || null,
+          logPath: path.join(userLogsPath(userId), `${terminalId}-boot.log`),
+          cliShimDir,
+        });
+      } catch {
+        continue;
+      }
     }
   }
 }
-
-const backendRoot = path.join(appRoot, 'backend');
-const cliShimDir = ensureCliShim(backendRoot);
 
 migrate()
   .then(async () => {
@@ -394,7 +405,7 @@ migrate()
 
       let entry = liveTerminals.get(terminalId);
 
-      if (entry) {
+if (entry) {
         attachWs(terminalId, ws);
       } else {
         const shell = (url.searchParams.get('shell') === 'cmd' ? 'cmd' : 'powershell') as 'cmd' | 'powershell';
@@ -402,23 +413,43 @@ migrate()
         const cwdParam = url.searchParams.get('cwd');
         const isMaestro = url.searchParams.get('maestro') === '1';
         const roleName = url.searchParams.get('roleName') || null;
-        const roleIdParam = url.searchParams.get('roleId');
-        const cwd = cwdParam
-          ? (roleIdParam ? roleDir(cwdParam, roleIdParam) : cwdParam)
-          : userFilesPath(userId);
+        const rolePrompt = url.searchParams.get('rolePrompt') || null;
+        const workingDirectory = cwdParam || userFilesPath(userId);
+        const label = url.searchParams.get('label') || terminalId;
 
-        entry = spawnTerminal({
+        writeAgentFiles({
           terminalId,
-          userId,
-          workspace,
+          label,
           shell,
-          cwd,
           aiCommand: cmd,
+          workspace,
+          workingDirectory,
           isMaestro,
           roleName,
-          logPath: path.join(userLogsPath(userId), `${terminalId}.log`),
-          cliShimDir,
+          rolePrompt,
         });
+
+        const instructionsPath = path.join(agentDir(workingDirectory, terminalId), 'CLAUDE.md');
+        const aiCommand = buildLaunchCommand(cmd, instructionsPath, shell);
+
+        try {
+          entry = spawnTerminal({
+            terminalId,
+            userId,
+            workspace,
+            shell,
+            cwd: workingDirectory,
+            workingDirectory,
+            aiCommand,
+            isMaestro,
+            roleName,
+            logPath: path.join(userLogsPath(userId), `${terminalId}.log`),
+            cliShimDir,
+          });
+        } catch {
+          ws.close(1008, 'Diretorio de trabalho invalido');
+          return;
+        }
         attachWs(terminalId, ws);
       }
 
