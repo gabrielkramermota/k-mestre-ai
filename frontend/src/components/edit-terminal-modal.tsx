@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Field, ToggleField } from './terminal-launch-modal';
+import ColorPicker from './color-picker';
 
 export interface EditTerminalValues {
   label: string;
@@ -11,6 +12,7 @@ export interface EditTerminalValues {
   workingDirectory: string;
   roleName: string;
   rolePrompt: string;
+  roleColor: string;
 }
 
 export default function EditTerminalModal({
@@ -30,6 +32,7 @@ export default function EditTerminalModal({
   const [workingDirectory, setWorkingDirectory] = useState(initial.workingDirectory);
   const [roleName, setRoleName] = useState(initial.roleName);
   const [rolePrompt, setRolePrompt] = useState(initial.rolePrompt);
+  const [roleColor, setRoleColor] = useState(initial.roleColor);
 
   return (
     <div style={overlayStyle}>
@@ -47,6 +50,7 @@ export default function EditTerminalModal({
               workingDirectory: workingDirectory.trim(),
               roleName: roleName.trim(),
               rolePrompt: rolePrompt.trim(),
+              roleColor,
             })}
             style={{ ...linkBtnStyle, fontWeight: 600 }}
           >
@@ -78,6 +82,9 @@ export default function EditTerminalModal({
             </Field>
             <Field label="Nome do papel (ex: DESIGN)">
               <input value={roleName} onChange={e => setRoleName(e.target.value)} className="mw-input" />
+            </Field>
+            <Field label="Cor do papel">
+              <ColorPicker value={roleColor} onChange={setRoleColor} />
             </Field>
           </div>
           <Field label="Prompt do papel">

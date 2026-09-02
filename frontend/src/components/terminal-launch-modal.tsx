@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { Bot, Code2, Network, Sparkles, TerminalSquare, X } from 'lucide-react';
 import { pickFolder } from '../api';
+import ColorPicker from './color-picker';
 
 export interface TerminalLaunchChoice {
   label: string;
@@ -13,6 +14,7 @@ export interface TerminalLaunchChoice {
   isMaestro: boolean;
   roleName: string;
   rolePrompt: string;
+  roleColor: string;
 }
 
 const QUICK_START = [
@@ -53,8 +55,9 @@ export default function TerminalLaunchModal({
   const [workingDirectory, setWorkingDirectory] = useState(defaultWorkingDirectory || '');
   const [monitorActivity, setMonitorActivity] = useState(true);
   const [isMaestro, setIsMaestro] = useState(false);
-  const [roleName, setRoleName] = useState('');
+const [roleName, setRoleName] = useState('');
   const [rolePrompt, setRolePrompt] = useState('');
+  const [roleColor, setRoleColor] = useState('#8b5cf6');
   const [picking, setPicking] = useState(false);
 
   useEffect(() => {
@@ -94,6 +97,7 @@ export default function TerminalLaunchModal({
       isMaestro,
       roleName: roleName.trim(),
       rolePrompt: rolePrompt.trim(),
+      roleColor,
     });
   };
 
@@ -183,6 +187,9 @@ export default function TerminalLaunchModal({
               <>
                 <Field label="Nome do papel (ex: DESIGN)">
                   <input value={roleName} onChange={e => setRoleName(e.target.value)} className="mw-input" />
+                </Field>
+                <Field label="Cor do papel">
+                  <ColorPicker value={roleColor} onChange={setRoleColor} />
                 </Field>
                 <Field label="Prompt do papel">
                   <textarea

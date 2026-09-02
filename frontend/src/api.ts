@@ -138,6 +138,7 @@ export async function updateTerminalAgent(
     isMaestro: boolean;
     roleName?: string;
     rolePrompt?: string;
+    roleColor?: string;
   },
 ): Promise<void> {
   const res = await fetchJson(`${API_ROOT}/terminals/${encodeURIComponent(terminalId)}/agent`, {

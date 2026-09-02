@@ -28,6 +28,9 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
     configRef.current = data;
   }, [data]);
 
+  const roleColor = (data.roleColor as string) || null;
+  const roleName = (data.roleName as string) || null;
+
   const mountTerminal = () => {
     if (!terminalRef.current) return;
     terminalRef.current.innerHTML = '';
@@ -53,6 +56,7 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
     if (cfg.label) params.set('label', cfg.label as string);
     if (cfg.roleName) params.set('roleName', cfg.roleName as string);
     if (cfg.rolePrompt) params.set('rolePrompt', cfg.rolePrompt as string);
+    if (cfg.roleColor) params.set('roleColor', cfg.roleColor as string);
     if (cfg.isMaestro) params.set('maestro', '1');
 
     const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/terminal?${params.toString()}`);
@@ -99,6 +103,23 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
     return () => cleanupRef.current();
   }, []);
 
+  // Paste via Ctrl+V: injeta direto no xterm ativo quando nada mais tem foco.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const term = xtermRef.current;
+      const text = e.clipboardData?.getData('text') ?? '';
+      if (!term || !text) return;
+      const active = document.activeElement;
+      const isInside = terminalRef.current?.contains(active as Node);
+      if (isInside || active === document.body || active === null) {
+        e.preventDefault();
+        term.paste(text);
+      }
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, []);
+
   const commitLabel = () => {
     setEditingLabel(false);
     const patch = { label };
@@ -134,6 +155,7 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
       workingDirectory: values.workingDirectory,
       roleName: values.roleName || undefined,
       rolePrompt: values.rolePrompt || undefined,
+      roleColor: values.roleColor || undefined,
     };
 
     if (values.workingDirectory) {
@@ -146,6 +168,7 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
           isMaestro: patch.isMaestro,
           roleName: patch.roleName,
           rolePrompt: patch.rolePrompt,
+          roleColor: patch.roleColor,
         });
       } catch (err) {
         toast.error('Não foi possível atualizar o agente: ' + (err as Error).message);
@@ -271,13 +294,34 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
               {label}
             </span>
           )}
+          {roleColor && roleName && (
+            <span
+              title={`Papel: ${roleName}`}
+              style={{
+                flexShrink: 0,
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+                color: roleColor,
+                background: `${roleColor}22`,
+                border: `1px solid ${roleColor}66`,
+                padding: '2px 8px',
+                borderRadius: 999,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {roleName}
+            </span>
+          )}
         </span>
       </div>
 
       <div
         className="nodrag"
         onWheel={e => { if (!e.ctrlKey) e.stopPropagation(); }}
-        style={{ flex: 1, padding: 6, overflow: 'hidden', minHeight: 0 }}
+        onMouseDown={() => { try { xtermRef.current?.focus(); } catch {} }}
+        onClick={() => { try { xtermRef.current?.focus(); } catch {} }}
+        style={{ flex: 1, padding: 6, overflow: 'hidden', minHeight: 0, position: 'relative', zIndex: 1 }}
       >
         <div ref={terminalRef} style={{ width: '100%', height: '100%' }} />
       </div>
@@ -293,6 +337,7 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
             workingDirectory: (data.workingDirectory as string) || '',
             roleName: (data.roleName as string) || '',
             rolePrompt: (data.rolePrompt as string) || '',
+            roleColor: (data.roleColor as string) || '#8b5cf6',
           }}
           onCancel={() => setEditModalOpen(false)}
           onSave={handleSaveEdit}

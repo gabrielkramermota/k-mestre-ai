@@ -386,6 +386,7 @@ function Canvas({ username, onLogout, onUsernameChange }: CanvasProps) {
       isMaestro: choice.isMaestro,
       roleName: choice.roleName || undefined,
       rolePrompt: choice.rolePrompt || undefined,
+      roleColor: choice.roleColor || undefined,
     }, terminalId);
   };
 
