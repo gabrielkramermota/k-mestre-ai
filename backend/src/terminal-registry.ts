@@ -3,6 +3,8 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import * as pty from 'node-pty';
 import type { WebSocket } from 'ws';
+import { assertWorkingDirectory } from './working-directory';
+import { removeAgentFiles } from './agents';
 
 export interface LiveTerminal {
   terminalId: string;
@@ -13,6 +15,7 @@ export interface LiveTerminal {
   token: string;
   isMaestro: boolean;
   roleName: string | null;
+  workingDirectory: string;
   outputBuffer: string[];
   logStream: fs.WriteStream;
 }
@@ -20,28 +23,6 @@ export interface LiveTerminal {
 export const liveTerminals = new Map<string, LiveTerminal>();
 
 const MAX_BUFFER_BYTES = 200_000;
-
-const AGENT_BOOTSTRAP = `# K-Mestre — agente em canvas compartilhado
-
-Você está rodando dentro do K-Mestre, um canvas que conecta agentes/terminais.
-
-- Rode \`kmestre list\` ANTES de falar sobre outros agentes ou terminais.
-  A resposta vem do orquestrador (CLI kmestre), NÃO da sua própria lista de
-  subagentes/peers internos.
-- Para mandar mensagem a um colega: \`kmestre send <nome-ou-id> "<mensagem>"\`.
-- Para ler a saída recente de um colega (resposta): \`kmestre check <nome-ou-id>\`.
-  Envie a mensagem, aguarde alguns segundos e use \`kmestre check\` para ver a resposta.
-- Notas conectadas: \`kmestre list\` mostra as notas do canvas. Leia com
-  \`kmestre note read <nome.md>\`, edite com \`kmestre note write <nome.md> "<conteudo>"\`
-  e crie com \`kmestre note create "<conteudo>" [--name "Nome"]\`.
-`;
-
-function writeAgentBootstrap(cwd: string): void {
-  for (const file of ['CLAUDE.md', 'AGENTS.md']) {
-    const p = path.join(cwd, file);
-    if (!fs.existsSync(p)) fs.writeFileSync(p, AGENT_BOOTSTRAP, 'utf-8');
-  }
-}
 
 export function appendToBuffer(entry: LiveTerminal, chunk: string): void {
   entry.outputBuffer.push(chunk);
@@ -57,6 +38,7 @@ export interface SpawnParams {
   workspace: string;
   shell: 'powershell' | 'cmd';
   cwd: string;
+  workingDirectory: string;
   aiCommand?: string;
   isMaestro: boolean;
   roleName: string | null;
@@ -69,8 +51,7 @@ export function spawnTerminal(params: SpawnParams): LiveTerminal {
   const token = crypto.randomUUID();
 
   fs.mkdirSync(path.dirname(params.logPath), { recursive: true });
-  fs.mkdirSync(params.cwd, { recursive: true });
-  if (params.aiCommand) writeAgentBootstrap(params.cwd);
+  assertWorkingDirectory(params.cwd);
   const logStream = fs.createWriteStream(params.logPath, { flags: 'a' });
 
   const ptyProcess = pty.spawn(shellBin, [], {
@@ -96,6 +77,7 @@ export function spawnTerminal(params: SpawnParams): LiveTerminal {
     token,
     isMaestro: params.isMaestro,
     roleName: params.roleName,
+    workingDirectory: params.workingDirectory,
     outputBuffer: [],
     logStream,
   };
@@ -134,6 +116,9 @@ export function killTerminal(terminalId: string): boolean {
   entry.ptyProcess.kill();
   entry.logStream.end();
   liveTerminals.delete(terminalId);
+  try {
+    removeAgentFiles(entry.workingDirectory, terminalId);
+  } catch {}
   return true;
 }
 
@@ -148,5 +133,14 @@ export function notifyActivity(terminalId: string, peerId: string): void {
   const entry = liveTerminals.get(terminalId);
   if (entry?.ws && entry.ws.readyState === entry.ws.OPEN) {
     entry.ws.send(`\x00ACTIVITY:${peerId}`);
+  }
+}
+
+export function broadcastLayoutChange(userId: string, workspace: string): void {
+  const msg = '\x00LAYOUT:1';
+  for (const entry of liveTerminals.values()) {
+    if (entry.userId === userId && entry.workspace === workspace) {
+      if (entry.ws && entry.ws.readyState === entry.ws.OPEN) entry.ws.send(msg);
+    }
   }
 }
