@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { Bot, Code2, Network, Sparkles, TerminalSquare, X } from 'lucide-react';
@@ -57,6 +57,14 @@ export default function TerminalLaunchModal({
   const [rolePrompt, setRolePrompt] = useState('');
   const [picking, setPicking] = useState(false);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
   const handlePickFolder = async () => {
     setPicking(true);
     try {
@@ -102,7 +110,7 @@ export default function TerminalLaunchModal({
         </div>
 
         <div style={bodyStyle}>
-          <div style={{ padding: '14px 18px 14px' }}>
+          <div style={{ padding: '14px 18px 14px', flexShrink: 0 }}>
             <div className="mw-section-label">Agente</div>
             <div className="km-quickstart-grid">
               {QUICK_START.map(q => (
@@ -118,44 +126,46 @@ export default function TerminalLaunchModal({
             </div>
           </div>
 
-          <div className="mw-tabs">
+          <div className="mw-tabs" style={{ flexShrink: 0 }}>
             <button className={`mw-tab${tab === 'detalhes' ? ' active' : ''}`} onClick={() => setTab('detalhes')}>Detalhes</button>
             <button className={`mw-tab${tab === 'agente' ? ' active' : ''}`} onClick={() => setTab('agente')}>Agente</button>
           </div>
 
-          <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14, flex: 1, minHeight: 0, overflowY: 'auto' }}>
             {tab === 'detalhes' ? (
               <>
-                <Field label="Nome do terminal">
-                  <input value={name} onChange={e => setName(e.target.value)} className="mw-input" />
-                </Field>
-                <Field label="Comando">
-                  <input
-                    value={command}
-                    onChange={e => setCommand(e.target.value)}
-                    placeholder="ex.: claude, codex, ou deixe vazio para shell"
-                    className="mw-input"
-                  />
-                </Field>
-                <Field label="Shell">
-                  <select value={shell} onChange={e => setShell(e.target.value as 'powershell' | 'cmd')} className="mw-input">
-                    <option value="powershell">PowerShell</option>
-                    <option value="cmd">CMD</option>
-                  </select>
-                </Field>
-                <Field label="Diretório de trabalho">
-                  <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+                  <Field label="Nome do terminal">
+                    <input value={name} onChange={e => setName(e.target.value)} className="mw-input" />
+                  </Field>
+                  <Field label="Comando">
                     <input
-                      value={workingDirectory}
-                      onChange={e => setWorkingDirectory(e.target.value)}
+                      value={command}
+                      onChange={e => setCommand(e.target.value)}
+                      placeholder="ex.: claude, codex, ou deixe vazio para shell"
                       className="mw-input"
-                      style={{ flex: 1 }}
                     />
-                    <button onClick={handlePickFolder} disabled={picking} className="mw-secondary-btn">
-                      {picking ? '...' : 'Procurar...'}
-                    </button>
-                  </div>
-                </Field>
+                  </Field>
+                  <Field label="Shell">
+                    <select value={shell} onChange={e => setShell(e.target.value as 'powershell' | 'cmd')} className="mw-input">
+                      <option value="powershell">PowerShell</option>
+                      <option value="cmd">CMD</option>
+                    </select>
+                  </Field>
+                  <Field label="Diretório de trabalho">
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        value={workingDirectory}
+                        onChange={e => setWorkingDirectory(e.target.value)}
+                        className="mw-input"
+                        style={{ flex: 1, minWidth: 0 }}
+                      />
+                      <button onClick={handlePickFolder} disabled={picking} className="mw-secondary-btn">
+                        {picking ? '...' : 'Procurar...'}
+                      </button>
+                    </div>
+                  </Field>
+                </div>
                 <ToggleField
                   label="Monitorar atividade"
                   description="Detecta a saída do terminal e avisa quando o trabalho termina."
@@ -179,7 +189,7 @@ export default function TerminalLaunchModal({
                     value={rolePrompt}
                     onChange={e => setRolePrompt(e.target.value)}
                     className="mw-input"
-                    style={{ minHeight: 140, resize: 'vertical' }}
+                    style={{ minHeight: 110, resize: 'vertical' }}
                   />
                 </Field>
               </>
@@ -231,17 +241,18 @@ const overlayStyle: CSSProperties = {
   backdropFilter: 'blur(4px)',
 };
 const modalStyle: CSSProperties = {
-  width: 460, maxHeight: '88vh', borderRadius: 20, overflow: 'hidden',
+  width: 560, maxHeight: '88vh', borderRadius: 20, overflow: 'hidden',
   display: 'flex', flexDirection: 'column',
   background: '#15181f',
   border: '1px solid rgba(255,255,255,0.1)',
   boxShadow: '0 30px 70px -20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)',
 };
 const brandHeaderStyle: CSSProperties = {
+  flexShrink: 0,
   position: 'relative', overflow: 'hidden',
   background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #6d28d9 100%)',
-  color: '#e0e7ff', padding: '20px 20px 18px',
-  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+  color: '#e0e7ff', padding: '14px 20px 12px',
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
 };
 const brandGlow: CSSProperties = {
   position: 'absolute', top: -70, right: -40, width: 240, height: 240,
@@ -257,6 +268,7 @@ const brandBadge: CSSProperties = {
 };
 const brandTitle: CSSProperties = { fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.15 };
 const bodyStyle: CSSProperties = {
+  minHeight: 0, overflow: 'hidden',
   flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0,
 };
 const closeBtnStyle: CSSProperties = {
@@ -267,6 +279,7 @@ const closeBtnStyle: CSSProperties = {
   cursor: 'pointer', transition: 'all 0.15s',
 };
 const footerStyle: CSSProperties = {
+  flexShrink: 0,
   display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10,
   padding: '14px 18px', borderTop: '1px solid var(--node-border)',
   background: 'rgba(255,255,255,0.02)',

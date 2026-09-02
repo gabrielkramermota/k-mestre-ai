@@ -6,6 +6,11 @@ export interface EditTerminalValues {
   label: string;
   monitorActivity: boolean;
   isMaestro: boolean;
+  aiCommand: string;
+  shell: 'powershell' | 'cmd';
+  workingDirectory: string;
+  roleName: string;
+  rolePrompt: string;
 }
 
 export default function EditTerminalModal({
@@ -20,6 +25,11 @@ export default function EditTerminalModal({
   const [label, setLabel] = useState(initial.label);
   const [monitorActivity, setMonitorActivity] = useState(initial.monitorActivity);
   const [isMaestro, setIsMaestro] = useState(initial.isMaestro);
+  const [aiCommand, setAiCommand] = useState(initial.aiCommand);
+  const [shell, setShell] = useState(initial.shell);
+  const [workingDirectory, setWorkingDirectory] = useState(initial.workingDirectory);
+  const [roleName, setRoleName] = useState(initial.roleName);
+  const [rolePrompt, setRolePrompt] = useState(initial.rolePrompt);
 
   return (
     <div style={overlayStyle}>
@@ -28,16 +38,55 @@ export default function EditTerminalModal({
           <button onClick={onCancel} style={linkBtnStyle}>Cancelar</button>
           <strong>Editar terminal</strong>
           <button
-            onClick={() => onSave({ label: label.trim() || 'Terminal', monitorActivity, isMaestro })}
+            onClick={() => onSave({
+              label: label.trim() || 'Terminal',
+              monitorActivity,
+              isMaestro,
+              aiCommand,
+              shell,
+              workingDirectory: workingDirectory.trim(),
+              roleName: roleName.trim(),
+              rolePrompt: rolePrompt.trim(),
+            })}
             style={{ ...linkBtnStyle, fontWeight: 600 }}
           >
             Salvar
           </button>
         </div>
 
-        <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Field label="Nome do terminal">
-            <input value={label} onChange={e => setLabel(e.target.value)} className="mw-input" autoFocus />
+        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14, flex: 1, minHeight: 0, overflowY: 'auto' }}>
+          <div style={grid2Style}>
+            <Field label="Nome do terminal">
+              <input value={label} onChange={e => setLabel(e.target.value)} className="mw-input" autoFocus />
+            </Field>
+            <Field label="Comando">
+              <input
+                value={aiCommand}
+                onChange={e => setAiCommand(e.target.value)}
+                placeholder="ex.: claude, codex, ou deixe vazio para shell"
+                className="mw-input"
+              />
+            </Field>
+            <Field label="Shell">
+              <select value={shell} onChange={e => setShell(e.target.value as 'powershell' | 'cmd')} className="mw-input">
+                <option value="powershell">PowerShell</option>
+                <option value="cmd">CMD</option>
+              </select>
+            </Field>
+            <Field label="Diretório de trabalho">
+              <input value={workingDirectory} onChange={e => setWorkingDirectory(e.target.value)} className="mw-input" />
+            </Field>
+            <Field label="Nome do papel (ex: DESIGN)">
+              <input value={roleName} onChange={e => setRoleName(e.target.value)} className="mw-input" />
+            </Field>
+          </div>
+          <Field label="Prompt do papel">
+            <textarea
+              value={rolePrompt}
+              onChange={e => setRolePrompt(e.target.value)}
+              className="mw-input"
+              style={{ minHeight: 90, resize: 'vertical' }}
+            />
           </Field>
           <ToggleField
             label="Monitorar atividade"
@@ -47,10 +96,13 @@ export default function EditTerminalModal({
           />
           <ToggleField
             label="Maestro"
-            description="Promove este terminal a maestro, capaz de reger o restante do canvas. Use Recarregar para aplicar."
+            description="Promove este terminal a maestro, capaz de reger o restante do canvas."
             checked={isMaestro}
             onChange={setIsMaestro}
           />
+          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            Alterações de comando, shell, diretório ou papel reiniciam o terminal para aplicar.
+          </div>
         </div>
       </div>
     </div>
@@ -61,8 +113,15 @@ const overlayStyle: CSSProperties = {
   position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
   display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
 };
-const modalStyle: CSSProperties = { width: 380, borderRadius: 18, overflow: 'hidden' };
+const modalStyle: CSSProperties = {
+  width: 520, maxHeight: '88vh', borderRadius: 18, overflow: 'hidden',
+  display: 'flex', flexDirection: 'column',
+};
+const grid2Style: CSSProperties = {
+  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14,
+};
 const headerRowStyle: CSSProperties = {
+  flexShrink: 0,
   display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px',
   borderBottom: '1px solid var(--node-border)',
 };
