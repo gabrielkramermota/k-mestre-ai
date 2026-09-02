@@ -12,8 +12,9 @@ Você está rodando dentro do K-Mestre, um canvas que conecta agentes/terminais.
 - Para ler a saída recente de um colega (resposta): \`kmestre check <nome-ou-id>\`.
   Envie a mensagem, aguarde alguns segundos e use \`kmestre check\` para ver a resposta.
 - Para criar um especialista (novo terminal) quando o usuário pedir um time:
-  \`kmestre spawn "Nome" --role "<prompt do papel>" [--cmd claude|codex|opencode] [--dir "caminho"]\`.
-  Só o Maestro pode criar; o novo agente nasce conectado a você.
+  \`kmestre spawn "Nome" --role "<prompt do papel>" [--cmd claude|codex|opencode] [--dir "caminho"] [--color "#hex"]\`.
+  Só o Maestro pode criar; o novo agente nasce conectado a você. Escolha uma cor da paleta
+  (ex.: #8b5cf6 roxo, #3b82f6 azul, #10b981 verde, #f59e0b laranja, #ef4444 vermelho, #ec4899 rosa).
 - Um terminal comum (sem papel), apenas com um objetivo da conversa:
   \`kmestre spawn "Nome"\` (herda seu comando) ou \`kmestre spawn "Nome" --cmd ""\` (shell puro).
 - Notas conectadas: \`kmestre list\` mostra as notas do canvas. Leia com
@@ -62,6 +63,7 @@ export interface AgentFilesParams {
   isMaestro: boolean;
   roleName: string | null;
   rolePrompt: string | null;
+  roleColor: string | null;
 }
 
 export function writeAgentFiles(params: AgentFilesParams): void {
@@ -87,6 +89,7 @@ export function writeAgentFiles(params: AgentFilesParams): void {
         isMaestro: params.isMaestro,
         roleName: params.roleName,
         rolePrompt: params.rolePrompt,
+        roleColor: params.roleColor,
         updatedAt: new Date().toISOString(),
       },
       null,

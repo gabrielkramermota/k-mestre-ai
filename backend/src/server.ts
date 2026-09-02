@@ -227,6 +227,7 @@ app.post('/api/terminals/:id/agent', requireAuth, (req, res) => {
     isMaestro?: boolean;
     roleName?: string | null;
     rolePrompt?: string | null;
+    roleColor?: string | null;
   };
 
   if (!body.workingDirectory) {
@@ -244,6 +245,7 @@ app.post('/api/terminals/:id/agent', requireAuth, (req, res) => {
       isMaestro: !!body.isMaestro,
       roleName: body.roleName || null,
       rolePrompt: body.rolePrompt || null,
+      roleColor: body.roleColor || null,
     });
     res.json({ ok: true });
   } catch (err: any) {
@@ -353,6 +355,7 @@ for (const node of layout.nodes || []) {
         isMaestro: !!data.isMaestro,
         roleName: data.roleName || null,
         rolePrompt: data.rolePrompt || null,
+        roleColor: data.roleColor || null,
       });
 
       const instructionsPath = path.join(agentDir(workingDirectory, terminalId), 'CLAUDE.md');
@@ -414,6 +417,7 @@ if (entry) {
         const isMaestro = url.searchParams.get('maestro') === '1';
         const roleName = url.searchParams.get('roleName') || null;
         const rolePrompt = url.searchParams.get('rolePrompt') || null;
+        const roleColor = url.searchParams.get('roleColor') || null;
         const workingDirectory = cwdParam || userFilesPath(userId);
         const label = url.searchParams.get('label') || terminalId;
 
@@ -427,6 +431,7 @@ if (entry) {
           isMaestro,
           roleName,
           rolePrompt,
+          roleColor,
         });
 
         const instructionsPath = path.join(agentDir(workingDirectory, terminalId), 'CLAUDE.md');

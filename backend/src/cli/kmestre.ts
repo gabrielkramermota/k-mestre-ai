@@ -171,16 +171,18 @@ async function main(): Promise<void> {
     let role: string | undefined;
     let aiCmd: string | undefined;
     let dir: string | undefined;
+    let color: string | undefined;
     const positional: string[] = [];
     for (let i = 0; i < args.length; i++) {
       if (args[i] === '--role') { role = args[++i]; }
       else if (args[i] === '--cmd') { aiCmd = args[++i]; }
       else if (args[i] === '--dir') { dir = args[++i]; }
+      else if (args[i] === '--color') { color = args[++i]; }
       else { positional.push(args[i]); }
     }
     name = positional.join(' ');
     if (!name) {
-      console.error('Uso: kmestre spawn "Nome" [--role "<prompt do papel>"] [--cmd claude|codex|opencode] [--dir "C:\\caminho"]');
+      console.error('Uso: kmestre spawn "Nome" [--role "<prompt do papel>"] [--cmd claude|codex|opencode] [--dir "C:\\caminho"] [--color "#hex"]');
       process.exitCode = 1;
       return;
     }
@@ -188,7 +190,7 @@ async function main(): Promise<void> {
     const res = await fetch(`${api}/api/orchestrator/spawn`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Kmestre-Token': token },
-      body: JSON.stringify({ name, role, cmd: aiCmd, dir }),
+      body: JSON.stringify({ name, role, cmd: aiCmd, dir, color }),
     });
     const data = (await res.json()) as { ok?: boolean; terminalId?: string; name?: string; error?: string };
     if (!res.ok) {
@@ -201,7 +203,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.error('Uso: kmestre list | kmestre send <alvo> <mensagem> | kmestre check <alvo> | kmestre spawn "Nome" [--role ...] | kmestre note read|write|create ...');
+  console.error('Uso: kmestre list | kmestre send <alvo> <mensagem> | kmestre check <alvo> | kmestre spawn "Nome" [--role ...] [--color "#hex"] | kmestre note read|write|create ...');
   process.exitCode = 1;
 }
 

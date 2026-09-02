@@ -123,7 +123,7 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
       return;
     }
 
-    const { name, role, cmd, dir } = req.body as { name?: string; role?: string; cmd?: string; dir?: string };
+    const { name, role, cmd, dir, color } = req.body as { name?: string; role?: string; cmd?: string; dir?: string; color?: string };
     if (!name) {
       res.status(400).json({ error: 'name e obrigatorio' });
       return;
@@ -151,6 +151,7 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
     const terminalId = `terminal-${Date.now()}`;
     const rolePrompt = role?.trim() || null;
     const shell = 'powershell';
+    const roleColor = color?.trim() || null;
 
     writeAgentFiles({
       terminalId,
@@ -162,6 +163,7 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
       isMaestro: false,
       roleName: rolePrompt ? name : null,
       rolePrompt,
+      roleColor,
     });
 
     const instructionsPath = path.join(agentDir(workingDirectory, terminalId), 'CLAUDE.md');
@@ -194,6 +196,7 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
         isMaestro: false,
         roleName: rolePrompt ? name : undefined,
         rolePrompt: rolePrompt || undefined,
+        roleColor: roleColor || undefined,
       },
     });
     layout.edges.push({ source: entry.terminalId, target: terminalId, id: `xy-edge__${entry.terminalId}-${terminalId}` });
