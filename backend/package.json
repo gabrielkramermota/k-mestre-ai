@@ -4,7 +4,7 @@
   "description": "K-Mestre - backend",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test --test-concurrency=1 -r ts-node/register src/*.test.ts",
     "dev": "ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
