@@ -1,8 +1,16 @@
-import { defineConfig, loadEnv } from 'vite'
+import { createLogger, defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { readFileSync } from 'node:fs'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'))
+const logger = createLogger()
+const logError = logger.error
+
+logger.error = (message, options) => {
+  const code = (options?.error as NodeJS.ErrnoException | undefined)?.code
+  if (code === 'ECONNRESET' && message.includes('ws proxy')) return
+  logError(message, options)
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -12,6 +20,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    customLogger: logger,
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
     },

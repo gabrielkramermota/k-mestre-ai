@@ -145,6 +145,32 @@ body {
   border-radius: 24px;
 }
 
+.ui-tool-group {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 3px;
+}
+
+.ui-tool-group .ui-btn {
+  border: none;
+  background: transparent;
+  padding: 7px 12px;
+  border-radius: 13px;
+}
+
+.ui-tool-group .ui-btn.active {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: #fff;
+}
+
+.ui-panel-sep {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 2px;
+}
+
 .ui-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
