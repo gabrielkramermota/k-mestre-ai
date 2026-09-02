@@ -71,7 +71,7 @@ export default function NoteNode({ id, data, selected }: NodeProps) {
 
   useEffect(() => {
     if (editingTitle) {
-      setTitleDraft(displayName);
+      setTitleDraft(displayName.replace(/\.md$/i, ''));
       titleInputRef.current?.focus();
     }
   }, [editingTitle]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -113,7 +113,7 @@ export default function NoteNode({ id, data, selected }: NodeProps) {
 
   const commitTitle = () => {
     setEditingTitle(false);
-    const trimmed = titleDraft.trim();
+    const trimmed = titleDraft.trim().replace(/\.md$/i, '');
     if (!trimmed) return;
     const lines = content.split('\n');
     const idx = lines.findIndex(l => l.trim());
@@ -167,6 +167,34 @@ export default function NoteNode({ id, data, selected }: NodeProps) {
         isConnectableStart={false}
         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', transform: 'none', opacity: 0, zIndex: 0, background: 'transparent', border: 'none', cursor: 'default' }}
       />
+      <Handle
+        type="source"
+        id="src-top"
+        position={Position.Top}
+        title="Conectar para cima"
+        style={{ background: '#10b981', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
+      />
+      <Handle
+        type="source"
+        id="connect"
+        position={Position.Right}
+        title="Conectar para a direita"
+        style={{ background: '#10b981', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
+      />
+      <Handle
+        type="source"
+        id="src-bottom"
+        position={Position.Bottom}
+        title="Conectar para baixo"
+        style={{ background: '#10b981', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
+      />
+      <Handle
+        type="source"
+        id="src-left"
+        position={Position.Left}
+        title="Conectar para a esquerda"
+        style={{ background: '#10b981', width: 14, height: 14, zIndex: 6, border: '2px solid rgba(15, 17, 21, 0.9)', cursor: 'crosshair' }}
+      />
 
       {selected && (
         <div className="node-toolbar nodrag">
@@ -198,38 +226,38 @@ export default function NoteNode({ id, data, selected }: NodeProps) {
         </div>
       )}
 
-      <div className="glass-header custom-drag-handle">
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
-          <span style={{ color: '#10b981' }}>📝</span>
-          {editingTitle ? (
-            <input
-              ref={titleInputRef}
-              value={titleDraft}
-              onChange={e => setTitleDraft(e.target.value)}
-              onBlur={commitTitle}
-              onKeyDown={e => { if (e.key === 'Enter') commitTitle(); if (e.key === 'Escape') setEditingTitle(false); }}
-              style={{
-                background: 'transparent', border: 'none', borderBottom: '1px solid #10b981',
-                color: '#e2e8f0', fontFamily: 'Inter, sans-serif', fontSize: 12.5,
-                fontWeight: 600, outline: 'none', width: '100%', minWidth: 40,
-              }}
-            />
-          ) : (
-            <span
-              onDoubleClick={() => setEditingTitle(true)}
-              title="Duplo-clique para renomear"
-              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160, cursor: 'text' }}
-            >
+      <div
+        className="glass-header custom-drag-handle"
+        onClick={editingTitle ? undefined : () => setEditingTitle(true)}
+        title="Clique para renomear"
+        style={{ cursor: 'text' }}
+      >
+        {editingTitle ? (
+          <input
+            ref={titleInputRef}
+            value={titleDraft}
+            onChange={e => setTitleDraft(e.target.value)}
+            onBlur={commitTitle}
+            onKeyDown={e => { if (e.key === 'Enter') commitTitle(); if (e.key === 'Escape') setEditingTitle(false); }}
+            style={{
+              background: 'transparent', border: 'none', borderBottom: '1px solid #10b981',
+              color: '#e2e8f0', fontFamily: 'Inter, sans-serif', fontSize: 12.5,
+              fontWeight: 600, outline: 'none', width: '100%', minWidth: 40,
+            }}
+          />
+        ) : (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
               {displayName}
             </span>
-          )}
-        </span>
+          </span>
+        )}
       </div>
 
       <div
         className="nodrag"
         onWheel={e => { if (!e.ctrlKey) e.stopPropagation(); }}
-        style={{ padding: 12, flex: 1, overflowY: 'auto', cursor: mode === 'preview' ? 'text' : 'default' }}
+        style={{ flex: 1, overflowY: 'auto', cursor: mode === 'preview' ? 'text' : 'default' }}
       >
         {mode === 'write' ? (
           <textarea
@@ -239,15 +267,15 @@ export default function NoteNode({ id, data, selected }: NodeProps) {
             placeholder="Escreva aqui... (markdown)"
             style={{
               width: '100%', height: '100%', minHeight: 100,
-              background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)',
-              color: '#e2e8f0', fontFamily: 'Inter, monospace', fontSize: 13,
-              padding: 8, borderRadius: 8, resize: 'none',
+              background: 'transparent', border: 'none', outline: 'none',
+              color: '#e2e8f0', fontFamily: 'Inter, sans-serif', fontSize: 13,
+              lineHeight: 1.6, padding: 12, boxSizing: 'border-box', resize: 'none',
             }}
           />
         ) : (
           <div
             onClick={() => setMode('write')}
-            style={{ fontSize: 13, lineHeight: 1.6, color: '#cbd5e1' }}
+            style={{ fontSize: 13, lineHeight: 1.6, color: '#cbd5e1', padding: 12 }}
           >
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {content || '*Clique para escrever...*'}

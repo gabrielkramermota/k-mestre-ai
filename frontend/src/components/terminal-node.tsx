@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Handle, Position, NodeResizer, useReactFlow } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { TerminalSquare, Crown, Link2, Pencil, RotateCw, Trash2 } from 'lucide-react';
-import { deleteTerminal } from '../api';
+import { toast } from 'sonner';
+import { deleteTerminal, updateTerminalAgent } from '../api';
 import EditTerminalModal from './edit-terminal-modal';
 import type { EditTerminalValues } from './edit-terminal-modal';
 
@@ -20,6 +22,11 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
   const [editingLabel, setEditingLabel] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const labelInputRef = useRef<HTMLInputElement>(null);
+  const configRef = useRef(data);
+
+  useEffect(() => {
+    configRef.current = data;
+  }, [data]);
 
   const mountTerminal = () => {
     if (!terminalRef.current) return;
@@ -38,13 +45,15 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
     xtermRef.current = term;
     fitAddonRef.current = fitAddon;
 
+    const cfg = configRef.current as Record<string, unknown>;
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const params = new URLSearchParams({ terminalId: id, shell: (data.shell as string) || 'powershell' });
-    if (data.aiCommand) params.set('cmd', data.aiCommand as string);
-    if (data.workingDirectory) params.set('cwd', data.workingDirectory as string);
-    if (data.roleId) params.set('roleId', data.roleId as string);
-    if (data.roleName) params.set('roleName', data.roleName as string);
-    if (data.isMaestro) params.set('maestro', '1');
+    const params = new URLSearchParams({ terminalId: id, shell: (cfg.shell as string) || 'powershell' });
+    if (cfg.aiCommand) params.set('cmd', cfg.aiCommand as string);
+    if (cfg.workingDirectory) params.set('cwd', cfg.workingDirectory as string);
+    if (cfg.label) params.set('label', cfg.label as string);
+    if (cfg.roleName) params.set('roleName', cfg.roleName as string);
+    if (cfg.rolePrompt) params.set('rolePrompt', cfg.rolePrompt as string);
+    if (cfg.isMaestro) params.set('maestro', '1');
 
     const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/terminal?${params.toString()}`);
     wsRef.current = ws;
@@ -62,6 +71,10 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
       if (typeof msg === 'string' && msg.startsWith('\x00ACTIVITY:')) {
         const peerId = msg.slice('\x00ACTIVITY:'.length);
         window.dispatchEvent(new CustomEvent('terminal-activity', { detail: { a: id, b: peerId } }));
+        return;
+      }
+      if (typeof msg === 'string' && msg.startsWith('\x00LAYOUT:')) {
+        window.dispatchEvent(new CustomEvent('layout-changed'));
         return;
       }
       term.write(msg);
@@ -88,7 +101,9 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
 
   const commitLabel = () => {
     setEditingLabel(false);
+    const patch = { label };
     setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, label } } : n));
+    window.dispatchEvent(new CustomEvent('terminal-update', { detail: { id, data: patch } }));
   };
 
   useEffect(() => {
@@ -106,12 +121,57 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
     mountTerminal();
   };
 
-  const handleSaveEdit = (values: EditTerminalValues) => {
+  const handleSaveEdit = async (values: EditTerminalValues) => {
     setEditModalOpen(false);
     setLabel(values.label);
-    setNodes(nds => nds.map(n => n.id === id
-      ? { ...n, data: { ...n.data, label: values.label, monitorActivity: values.monitorActivity, isMaestro: values.isMaestro } }
-      : n));
+
+    const patch = {
+      label: values.label,
+      monitorActivity: values.monitorActivity,
+      isMaestro: values.isMaestro,
+      aiCommand: values.aiCommand.trim() || undefined,
+      shell: values.shell,
+      workingDirectory: values.workingDirectory,
+      roleName: values.roleName || undefined,
+      rolePrompt: values.rolePrompt || undefined,
+    };
+
+    if (values.workingDirectory) {
+      try {
+        await updateTerminalAgent(id, {
+          label: patch.label,
+          shell: patch.shell,
+          aiCommand: patch.aiCommand,
+          workingDirectory: patch.workingDirectory,
+          isMaestro: patch.isMaestro,
+          roleName: patch.roleName,
+          rolePrompt: patch.rolePrompt,
+        });
+      } catch (err) {
+        toast.error('Não foi possível atualizar o agente: ' + (err as Error).message);
+        return;
+      }
+    }
+
+    const roleChanged = (values.roleName || values.rolePrompt) && (
+      values.roleName !== ((data.roleName as string) || '') ||
+      values.rolePrompt !== ((data.rolePrompt as string) || '')
+    );
+
+    configRef.current = { ...configRef.current, ...patch };
+    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, ...patch } } : n));
+    window.dispatchEvent(new CustomEvent('terminal-update', { detail: { id, data: patch } }));
+
+    const configChanged =
+      values.aiCommand.trim() !== ((data.aiCommand as string) || '') ||
+      values.shell !== ((data.shell as string) || 'powershell') ||
+      values.workingDirectory !== ((data.workingDirectory as string) || '') ||
+      roleChanged;
+    if (configChanged) {
+      cleanupRef.current();
+      await deleteTerminal(id).catch(() => {});
+      mountTerminal();
+    }
   };
 
   return (
@@ -222,16 +282,22 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
         <div ref={terminalRef} style={{ width: '100%', height: '100%' }} />
       </div>
 
-      {editModalOpen && (
+      {editModalOpen && createPortal(
         <EditTerminalModal
           initial={{
             label,
             monitorActivity: data.monitorActivity !== false,
             isMaestro: Boolean(data.isMaestro),
+            aiCommand: (data.aiCommand as string) || '',
+            shell: (data.shell as 'powershell' | 'cmd') || 'powershell',
+            workingDirectory: (data.workingDirectory as string) || '',
+            roleName: (data.roleName as string) || '',
+            rolePrompt: (data.rolePrompt as string) || '',
           }}
           onCancel={() => setEditModalOpen(false)}
           onSave={handleSaveEdit}
-        />
+        />,
+        document.body,
       )}
     </div>
   );
