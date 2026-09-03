@@ -87,8 +87,13 @@ export function writeAgentFiles(params: AgentFilesParams): void {
   const instructions = buildInstructions(params.rolePrompt, params.workingDirectory);
   fs.writeFileSync(path.join(dir, 'CLAUDE.md'), instructions, 'utf-8');
   fs.writeFileSync(path.join(dir, 'AGENTS.md'), instructions, 'utf-8');
+  fs.writeFileSync(
+    path.join(dir, 'opencode.json'),
+    JSON.stringify({ $schema: 'https://opencode.ai/config.json', instructions: ['AGENTS.md'] }, null, 2),
+    'utf-8',
+  );
 
-  // Pré-aprova APENAS os comandos kmestre (orquestração do canvas). Todo o resto continua pedindo aprovação.
+  // Claude pré-aprova apenas a CLI de orquestração do canvas.
   const claudeSettings = {
     permissions: {
       allow: [
@@ -130,7 +135,7 @@ export function removeAgentFiles(workingDirectory: string, terminalId: string): 
 }
 
 // Builds the launch command that injects the instructions file into the agent.
-// Também pré-aprova os comandos kmestre para que o agente orquestre sem travar.
+// Claude recebe permissões seletivas; Codex/OpenCode rodam sem prompts interativos de aprovação.
 export function buildLaunchCommand(
   aiCommand: string | undefined,
   instructionsPath: string,
@@ -160,7 +165,11 @@ export function buildLaunchCommand(
   }
 
   if (lower.startsWith('opencode')) {
-    return `${base} --auto`;
+    const configPath = path.join(path.dirname(instructionsPath), 'opencode.json');
+    if (shell === 'powershell') {
+      return `$env:OPENCODE_CONFIG='${configPath.replace(/'/g, "''")}'; ${base} --auto`;
+    }
+    return `set "OPENCODE_CONFIG=${configPath}" && ${base} --auto`;
   }
 
   return base;

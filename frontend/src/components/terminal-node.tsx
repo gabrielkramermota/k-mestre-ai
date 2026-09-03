@@ -7,6 +7,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { TerminalSquare, Crown, Link2, Pencil, RotateCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { terminalConfigRequiresRestart } from '../terminal-config';
 import { deleteTerminal, updateTerminalAgent } from '../api';
 import EditTerminalModal from './edit-terminal-modal';
 import type { EditTerminalValues } from './edit-terminal-modal';
@@ -176,20 +177,11 @@ export default function TerminalNode({ id, data, selected }: NodeProps) {
       }
     }
 
-    const roleChanged = (values.roleName || values.rolePrompt) && (
-      values.roleName !== ((data.roleName as string) || '') ||
-      values.rolePrompt !== ((data.rolePrompt as string) || '')
-    );
-
     configRef.current = { ...configRef.current, ...patch };
     setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, ...patch } } : n));
     window.dispatchEvent(new CustomEvent('terminal-update', { detail: { id, data: patch } }));
 
-    const configChanged =
-      values.aiCommand.trim() !== ((data.aiCommand as string) || '') ||
-      values.shell !== ((data.shell as string) || 'powershell') ||
-      values.workingDirectory !== ((data.workingDirectory as string) || '') ||
-      roleChanged;
+    const configChanged = terminalConfigRequiresRestart(data, values);
     if (configChanged) {
       cleanupRef.current();
       await deleteTerminal(id).catch(() => {});

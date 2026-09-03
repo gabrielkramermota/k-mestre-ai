@@ -174,13 +174,14 @@ async function main(): Promise<void> {
     let color: string | undefined;
     const positional: string[] = [];
     for (let i = 0; i < args.length; i++) {
-      if (args[i] === '--role') { role = args[++i]; }
+      if (args[i] === '--role' || args[i] === '--prompt') { role = args[++i]; }
+      else if (args[i] === '--name' || args[i] === '--label') { name = args[++i]; }
       else if (args[i] === '--cmd') { aiCmd = args[++i]; }
       else if (args[i] === '--dir') { dir = args[++i]; }
       else if (args[i] === '--color') { color = args[++i]; }
       else { positional.push(args[i]); }
     }
-    name = positional.join(' ');
+    name = (name || positional.join(' ')).trim();
     if (!name) {
       console.error('Uso: kmestre spawn "Nome" [--role "<prompt do papel>"] [--cmd claude|codex|opencode] [--dir "C:\\caminho"] [--color "#hex"]');
       process.exitCode = 1;

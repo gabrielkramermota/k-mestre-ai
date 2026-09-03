@@ -1,8 +1,10 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
-import { liveTerminals, sendToTerminal, notifyActivity, spawnTerminal, killTerminal, broadcastLayoutChange } from './terminal-registry';
-import { writeAgentFiles, buildLaunchCommand, agentDir, notesDir } from './agents';
+import * as crypto from 'crypto';
+import { liveTerminals, findTerminalForUser, sendToTerminal, notifyActivity, spawnTerminal, restartTerminal, killTerminal, broadcastLayoutChange } from './terminal-registry';
+import { writeAgentFiles, buildLaunchCommand, agentDir, notesDir, removeAgentFiles } from './agents';
+import { assertWorkingDirectory } from './working-directory';
 
 interface CanvasNode {
   id: string;
@@ -104,7 +106,12 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
       return;
     }
 
-    const ok = sendToTerminal(targetNode.id, message);
+    const targetEntry = findTerminalForUser(targetNode.id, entry.userId, entry.workspace);
+    if (!targetEntry) {
+      res.status(409).json({ error: `Terminal '${target}' nao esta aberto agora.` });
+      return;
+    }
+    const ok = sendToTerminal(targetEntry.terminalId, message);
     if (!ok) {
       res.status(409).json({ error: `Terminal '${target}' nao esta aberto agora.` });
       return;
@@ -146,6 +153,12 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
       res.status(400).json({ error: 'Maestro sem diretorio de trabalho definido; informe --dir.' });
       return;
     }
+    try {
+      assertWorkingDirectory(workingDirectory);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
     const aiCommand = hasCmd ? (cmd.trim() || undefined) : defaultCmd;
 
     // Posiciona o novo terminal em grade, afastado do maestro (direita), sem sobrepor.
@@ -159,60 +172,71 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
       y: sourcePos.y + row * 480,
     };
 
-    const terminalId = `terminal-${Date.now()}`;
+    const terminalId = `terminal-${crypto.randomUUID()}`;
     const rolePrompt = role?.trim() || null;
     const shell = 'powershell';
     const roleColor = color?.trim() || null;
 
-    writeAgentFiles({
-      terminalId,
-      label: name,
-      shell,
-      aiCommand,
-      workspace: entry.workspace,
-      workingDirectory,
-      isMaestro: false,
-      roleName: rolePrompt ? name : null,
-      rolePrompt,
-      roleColor,
-    });
-
-    const instructionsPath = path.join(agentDir(workingDirectory, terminalId), 'CLAUDE.md');
-    const finalCommand = buildLaunchCommand(aiCommand, instructionsPath, shell);
-
-    spawnTerminal({
-      terminalId,
-      userId: entry.userId,
-      workspace: entry.workspace,
-      shell,
-      cwd: workingDirectory,
-      workingDirectory,
-      aiCommand: finalCommand,
-      isMaestro: false,
-      roleName: rolePrompt ? name : null,
-      logPath: path.join(dataRoot, entry.userId, 'logs', `${terminalId}.log`),
-      cliShimDir,
-    });
-
-    layout.nodes.push({
-      id: terminalId,
-      type: 'terminal',
-      position,
-      style: { width: 600, height: 380 },
-      data: {
+    let spawned = false;
+    try {
+      writeAgentFiles({
+        terminalId,
         label: name,
         shell,
         aiCommand,
+        workspace: entry.workspace,
         workingDirectory,
-        monitorActivity: true,
         isMaestro: false,
-        roleName: rolePrompt ? name : undefined,
-        rolePrompt: rolePrompt || undefined,
-        roleColor: roleColor || undefined,
-      },
-    });
-    layout.edges.push({ source: entry.terminalId, target: terminalId, id: `xy-edge__${entry.terminalId}-${terminalId}` });
-    fs.writeFileSync(layoutPath, JSON.stringify(layout, null, 2), 'utf-8');
+        roleName: rolePrompt ? name : null,
+        rolePrompt,
+        roleColor,
+      });
+
+      const instructionsPath = path.join(agentDir(workingDirectory, terminalId), 'CLAUDE.md');
+      const finalCommand = buildLaunchCommand(aiCommand, instructionsPath, shell);
+
+      spawnTerminal({
+        terminalId,
+        userId: entry.userId,
+        workspace: entry.workspace,
+        shell,
+        cwd: workingDirectory,
+        workingDirectory,
+        aiCommand: finalCommand,
+        isMaestro: false,
+        roleName: rolePrompt ? name : null,
+        logPath: path.join(dataRoot, entry.userId, 'logs', `${terminalId}.log`),
+        cliShimDir,
+      });
+      spawned = true;
+
+      layout.nodes.push({
+        id: terminalId,
+        type: 'terminal',
+        position,
+        style: { width: 600, height: 380 },
+        data: {
+          label: name,
+          shell,
+          aiCommand,
+          workingDirectory,
+          monitorActivity: true,
+          isMaestro: false,
+          roleName: rolePrompt ? name : undefined,
+          rolePrompt: rolePrompt || undefined,
+          roleColor: roleColor || undefined,
+        },
+      });
+      layout.edges.push({ source: entry.terminalId, target: terminalId, id: `xy-edge__${entry.terminalId}-${terminalId}` });
+      fs.writeFileSync(layoutPath, JSON.stringify(layout, null, 2), 'utf-8');
+    } catch (err: any) {
+      if (spawned) killTerminal(terminalId);
+      else {
+        try { removeAgentFiles(workingDirectory, terminalId); } catch {}
+      }
+      res.status(500).json({ error: err.message });
+      return;
+    }
 
     broadcastLayoutChange(entry.userId, entry.workspace);
     res.json({ ok: true, terminalId, name });
@@ -240,7 +264,11 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
     if (!Array.isArray(layout.edges)) layout.edges = [];
 
     const node = layout.nodes.find((n: any) => n.id === entry.terminalId);
-    const data = node?.data || {};
+    if (!node) {
+      res.status(404).json({ error: 'Terminal nao encontrado no canvas.' });
+      return;
+    }
+    const data = node.data || {};
     const workingDirectory = (data.workingDirectory as string) || entry.workingDirectory;
     const shell = data.shell === 'cmd' ? 'cmd' : 'powershell';
     const roleName = role?.trim() || (data.roleName as string) || null;
@@ -271,25 +299,30 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
       fs.writeFileSync(layoutPath, JSON.stringify(layout, null, 2), 'utf-8');
     }
 
-    // Reinicia o PTY com o novo prompt injetado.
-    killTerminal(entry.terminalId);
+    // Reinicia o PTY com o novo prompt injetado (preserva WS/token, não apaga agent files).
     const instructionsPath = path.join(agentDir(workingDirectory, entry.terminalId), 'CLAUDE.md');
     const aiCommand = buildLaunchCommand(data.aiCommand as string | undefined, instructionsPath, shell);
     try {
-      spawnTerminal({
-        terminalId: entry.terminalId,
-        userId: entry.userId,
-        workspace: entry.workspace,
-        shell,
-        cwd: workingDirectory,
-        workingDirectory,
-        aiCommand,
-        isMaestro: entry.isMaestro,
-        roleName,
-        logPath: path.join(dataRoot, entry.userId, 'logs', `${entry.terminalId}.log`),
-        cliShimDir,
-      });
+      if (!restartTerminal(entry.terminalId, { shell, cwd: workingDirectory, aiCommand, cliShimDir, roleName })) {
+        throw new Error('Terminal nao esta aberto para reiniciar.');
+      }
     } catch (err: any) {
+      node.data = data;
+      try {
+        writeAgentFiles({
+          terminalId: entry.terminalId,
+          label: (data.label as string) || entry.terminalId,
+          shell,
+          aiCommand: data.aiCommand as string | undefined,
+          workspace: entry.workspace,
+          workingDirectory,
+          isMaestro: entry.isMaestro,
+          roleName: (data.roleName as string) || null,
+          rolePrompt: (data.rolePrompt as string) || null,
+          roleColor: (data.roleColor as string) || null,
+        });
+        fs.writeFileSync(layoutPath, JSON.stringify(layout, null, 2), 'utf-8');
+      } catch {}
       res.status(500).json({ error: err.message });
       return;
     }
@@ -322,7 +355,7 @@ export function orchestratorRouter(dataRoot: string, cliShimDir: string): Router
       return;
     }
 
-    const targetEntry = liveTerminals.get(targetNode.id);
+    const targetEntry = findTerminalForUser(targetNode.id, entry.userId, entry.workspace);
     if (!targetEntry) {
       res.status(409).json({ error: `Terminal '${target}' nao esta aberto agora.` });
       return;

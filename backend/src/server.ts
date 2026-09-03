@@ -7,11 +7,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { prisma, migrate } from './db';
-import { liveTerminals, spawnTerminal, attachWs, detachWs, killTerminal } from './terminal-registry';
+import { liveTerminals, findTerminalForUser, spawnTerminal, attachWs, detachWs, killTerminal } from './terminal-registry';
 import { writeAgentFiles, buildLaunchCommand, agentDir, notesDir } from './agents';
 import { ensureCliShim } from './cli-shim';
 import { orchestratorRouter } from './orchestrator-routes';
 import { pickFolder } from './folder-picker';
+import { assertWorkingDirectory } from './working-directory';
 import {
   verifyPassword,
   hashPassword,
@@ -232,7 +233,9 @@ app.get('/api/pick-folder', requireAuth, (_req, res) => {
 });
 
 app.delete('/api/terminals/:id', requireAuth, (req, res) => {
-  const ok = killTerminal(String(req.params.id));
+  const terminalId = String(req.params.id);
+  if (!findTerminalForUser(terminalId, req.userId!)) return res.status(404).json({ error: 'Terminal nao encontrado' });
+  const ok = killTerminal(terminalId);
   res.json({ ok });
 });
 
@@ -253,13 +256,17 @@ app.post('/api/terminals/:id/agent', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'workingDirectory e obrigatorio' });
   }
 
+  const entry = findTerminalForUser(terminalId, req.userId!);
+  if (!entry) return res.status(404).json({ error: 'Terminal nao encontrado' });
+
   try {
+    assertWorkingDirectory(body.workingDirectory);
     writeAgentFiles({
       terminalId,
       label: body.label || terminalId,
       shell: body.shell === 'cmd' ? 'cmd' : 'powershell',
       aiCommand: body.aiCommand || undefined,
-      workspace: 'default',
+      workspace: entry.workspace,
       workingDirectory: body.workingDirectory,
       isMaestro: !!body.isMaestro,
       roleName: body.roleName || null,
@@ -440,7 +447,12 @@ migrate()
 
       let entry = liveTerminals.get(terminalId);
 
-if (entry) {
+      if (entry && entry.userId !== userId) {
+        ws.close(4003, 'Forbidden');
+        return;
+      }
+
+      if (entry) {
         attachWs(terminalId, ws);
       } else {
         const shell = (url.searchParams.get('shell') === 'cmd' ? 'cmd' : 'powershell') as 'cmd' | 'powershell';

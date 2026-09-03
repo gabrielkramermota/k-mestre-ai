@@ -22,6 +22,11 @@ export interface LiveTerminal {
 
 export const liveTerminals = new Map<string, LiveTerminal>();
 
+export function findTerminalForUser(terminalId: string, userId: string, workspace?: string): LiveTerminal | undefined {
+  const entry = liveTerminals.get(terminalId);
+  return entry?.userId === userId && (!workspace || entry.workspace === workspace) ? entry : undefined;
+}
+
 const MAX_BUFFER_BYTES = 200_000;
 
 export function appendToBuffer(entry: LiveTerminal, chunk: string): void {
@@ -121,6 +126,49 @@ export function killTerminal(terminalId: string): boolean {
   try {
     removeAgentFiles(entry.workingDirectory, terminalId);
   } catch {}
+  return true;
+}
+
+// Reinicia o PTY preservando o entry, o token e o WebSocket (usado pelo kmestre self).
+// NÃO remove os agent files nem desconecta o frontend.
+export function restartTerminal(
+  terminalId: string,
+  params: {
+    shell: 'powershell' | 'cmd';
+    cwd: string;
+    aiCommand?: string;
+    cliShimDir: string;
+    roleName?: string | null;
+  },
+): boolean {
+  const entry = liveTerminals.get(terminalId);
+  if (!entry) return false;
+  const shellBin = params.shell === 'cmd' ? 'cmd.exe' : 'powershell.exe';
+  const ptyProcess = pty.spawn(shellBin, [], {
+    name: 'xterm-color',
+    cols: 80,
+    rows: 30,
+    cwd: params.cwd,
+    env: {
+      ...(process.env as Record<string, string>),
+      KMESTRE_TERMINAL_ID: entry.terminalId,
+      KMESTRE_TOKEN: entry.token,
+      KMESTRE_API: `http://localhost:${port}`,
+      PATH: `${params.cliShimDir}${path.delimiter}${process.env.PATH || ''}`,
+    },
+  });
+  const previousPty = entry.ptyProcess;
+  entry.ptyProcess = ptyProcess;
+  if (params.roleName !== undefined) entry.roleName = params.roleName;
+  ptyProcess.onData(data => {
+    appendToBuffer(entry, data);
+    entry.logStream.write(data);
+    if (entry.ws && entry.ws.readyState === entry.ws.OPEN) entry.ws.send(data);
+  });
+  try { previousPty.kill(); } catch {}
+  if (params.aiCommand) {
+    setTimeout(() => ptyProcess.write(`${params.aiCommand}\r`), 300);
+  }
   return true;
 }
 
