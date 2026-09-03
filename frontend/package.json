@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "test": "node --test src/terminal-config.test.ts",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
